@@ -21,6 +21,7 @@
   --focus: #0d746b;
   --shadow: 0 18px 46px rgba(31, 49, 72, 0.11);
   --shadow-soft: 0 10px 24px rgba(31, 49, 72, 0.07);
+  --shadow-card: 0 18px 42px rgba(24, 42, 64, 0.1), 0 2px 0 rgba(255, 255, 255, 0.82) inset;
   --radius: 8px;
 }
 
@@ -37,13 +38,14 @@ html {
 body {
   min-height: 100vh;
   margin: 0;
+  overflow-x: hidden;
   color: var(--ink);
   background:
     linear-gradient(135deg, rgba(11, 143, 105, 0.08) 0%, rgba(255, 255, 255, 0) 30%),
     linear-gradient(225deg, rgba(36, 95, 199, 0.07) 0%, rgba(255, 255, 255, 0) 32%),
     linear-gradient(180deg, #f8fbfc 0%, #eef4f7 46%, #f7f9fb 100%);
   font-family:
-    "Manrope", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    "Inter", "Manrope", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -266,6 +268,11 @@ h3 {
   background:
     linear-gradient(180deg, rgba(238, 243, 246, 0.96), rgba(238, 243, 246, 0.78));
   backdrop-filter: blur(18px);
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .tab-button {
@@ -287,10 +294,12 @@ h3 {
 main {
   display: grid;
   gap: 18px;
+  min-width: 0;
 }
 
 .tab-panel {
   display: none;
+  min-width: 0;
 }
 
 .tab-panel.active {
@@ -299,10 +308,27 @@ main {
   align-items: start;
 }
 
+.tab-panel.active > * {
+  animation: panelRise 0.42s ease both;
+}
+
+@keyframes panelRise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
+  min-width: 0;
 }
 
 .metric-card,
@@ -310,14 +336,51 @@ main {
 .coach-card,
 .scenario-item,
 .research-item {
-  border: 1px solid rgba(193, 206, 220, 0.9);
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(189, 203, 218, 0.82);
   border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: var(--shadow-soft);
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.98) 0%, rgba(249, 252, 253, 0.92) 58%, rgba(236, 244, 247, 0.72) 100%),
+    radial-gradient(circle at 18% 0%, rgba(67, 240, 183, 0.08), transparent 36%),
+    radial-gradient(circle at 100% 24%, rgba(36, 95, 199, 0.07), transparent 34%);
+  box-shadow: var(--shadow-card);
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.metric-card::before,
+.tool-panel::before,
+.coach-card::before,
+.scenario-item::before,
+.research-item::before,
+.visual-card::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, rgba(11, 143, 105, 0.92), rgba(36, 95, 199, 0.78), rgba(109, 84, 199, 0.64));
+  opacity: 0.86;
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .metric-card:hover,
+  .tool-panel:hover,
+  .coach-card:hover,
+  .scenario-item:hover,
+  .research-item:hover,
+  .visual-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(126, 151, 177, 0.78);
+    box-shadow: 0 24px 54px rgba(24, 42, 64, 0.14), 0 2px 0 rgba(255, 255, 255, 0.88) inset;
+  }
 }
 
 .metric-card {
-  position: relative;
   min-height: 124px;
   display: grid;
   align-content: space-between;
@@ -367,7 +430,7 @@ main {
   z-index: 1;
   display: block;
   color: #101d2f;
-  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 30px;
   line-height: 1.06;
   word-break: break-word;
@@ -418,7 +481,7 @@ main {
 .vault-grid strong,
 .vault-sync-row strong {
   color: #101d2f;
-  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 22px;
   line-height: 1.05;
 }
@@ -428,9 +491,11 @@ main {
   grid-template-columns: 1.08fr 1.42fr 1fr 1fr;
   gap: 12px;
   align-items: stretch;
+  min-width: 0;
 }
 
 .visual-card {
+  position: relative;
   min-height: 286px;
   display: grid;
   gap: 14px;
@@ -492,10 +557,12 @@ main {
   width: 100%;
   min-height: 210px;
   overflow: hidden;
+  contain: layout paint;
 }
 
 .visual-chart {
   height: 264px;
+  min-height: 264px;
   border: 1px solid rgba(193, 206, 220, 0.72);
   border-radius: var(--radius);
   background:
@@ -515,6 +582,8 @@ main {
 
 .chart-host > div,
 .chart-host canvas {
+  width: 100% !important;
+  height: 100% !important;
   max-width: none;
 }
 
@@ -554,7 +623,7 @@ main {
 
 .visual-stat-list strong {
   color: #132033;
-  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 17px;
   line-height: 1.1;
 }
@@ -656,11 +725,13 @@ main {
   grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
   gap: 18px;
   align-items: stretch;
+  min-width: 0;
 }
 
 .tool-panel {
   padding: 22px 24px;
   display: grid;
+  align-content: start;
   gap: 18px;
 }
 
@@ -768,7 +839,7 @@ main {
 
 .progress-ring strong {
   color: #101d2f;
-  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 28px;
   font-weight: 700;
   line-height: 1;
@@ -996,9 +1067,12 @@ textarea {
 .table-wrap {
   width: 100%;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   border: 1px solid rgba(193, 206, 220, 0.86);
   border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.8);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(247, 250, 251, 0.88));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86);
 }
 
 table {
@@ -1150,7 +1224,7 @@ tbody tr:last-child td {
 
 .coach-metrics strong {
   color: #101d2f;
-  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 20px;
   line-height: 1.1;
   text-transform: none;
@@ -1277,17 +1351,26 @@ tbody tr:last-child td {
 
 .scenario-item,
 .research-item {
-  padding: 15px;
-  min-height: 160px;
-  box-shadow: none;
-  background: rgba(255, 255, 255, 0.76);
+  min-height: 168px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 18px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(247, 251, 252, 0.88)),
+    repeating-linear-gradient(135deg, rgba(13, 116, 107, 0.026) 0 1px, transparent 1px 20px);
+  box-shadow:
+    0 14px 30px rgba(24, 42, 64, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .scenario-item strong,
 .research-item strong {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 2px;
   color: #142238;
+  font-size: 15px;
+  line-height: 1.32;
 }
 
 .metric-inline {
@@ -1375,9 +1458,38 @@ tbody tr:last-child td {
     font-size: 29px;
   }
 
+  .tabs {
+    margin-inline: -14px;
+    padding: 8px 14px 12px;
+    gap: 7px;
+    scroll-snap-type: x proximity;
+  }
+
   .tab-button {
-    min-width: 112px;
-    padding-inline: 10px;
+    min-width: auto;
+    flex: 0 0 auto;
+    min-height: 42px;
+    padding: 8px 10px;
+    scroll-snap-align: start;
+  }
+
+  .tab-button span {
+    font-size: 13px;
+  }
+
+  .metric-card,
+  .tool-panel,
+  .visual-card,
+  .coach-card,
+  .scenario-item,
+  .research-item {
+    border-color: rgba(185, 201, 217, 0.86);
+    box-shadow: 0 12px 26px rgba(24, 42, 64, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  }
+
+  .tool-panel,
+  .visual-card {
+    padding: 17px;
   }
 
   .metric-grid,
@@ -1423,11 +1535,65 @@ tbody tr:last-child td {
   }
 
   .chart {
-    height: 278px;
+    height: 320px;
+    min-height: 320px;
   }
 
   .chart.compact {
-    height: 210px;
+    height: 250px;
+    min-height: 250px;
+  }
+
+  .visual-chart {
+    height: 316px;
+    min-height: 316px;
+  }
+
+  .donut-host {
+    height: 244px;
+    min-height: 244px;
+  }
+
+  .compact-donut .donut-host {
+    height: 226px;
+    min-height: 226px;
+  }
+
+  table {
+    min-width: 620px;
+  }
+
+  th,
+  td {
+    padding: 10px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 520px) {
+  .chart {
+    height: 300px;
+    min-height: 300px;
+  }
+
+  .chart.compact {
+    height: 236px;
+    min-height: 236px;
+  }
+
+  .visual-chart {
+    height: 286px;
+    min-height: 286px;
+  }
+
+  .donut-host {
+    height: 228px;
+    min-height: 228px;
+  }
+
+  .clock-stack span {
+    max-width: 100%;
+    white-space: normal;
   }
 }
 

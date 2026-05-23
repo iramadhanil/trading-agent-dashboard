@@ -32,6 +32,7 @@
   let memoryMeta = loadMemoryMeta();
   let renderTimer = null;
   let autoSyncTimer = null;
+  let chartResizeObserver = null;
   const chartInstances = new Map();
 
   const $ = (selector) => document.querySelector(selector);
@@ -59,14 +60,15 @@
     bindRiskLab();
     bindBackendControls();
     hydrateForms();
+    setupChartResizeObserver();
     renderAll();
     refreshBackendStatus();
     window.setInterval(() => renderClocksAndMarket(), 1000);
     window.addEventListener("resize", () => {
       window.clearTimeout(renderTimer);
       renderTimer = window.setTimeout(() => {
-        chartInstances.forEach((chart) => chart.resize());
         renderCharts();
+        resizeChartsSoon();
       }, 120);
     });
   }
@@ -216,7 +218,10 @@
         const tab = button.dataset.tab;
         $$(".tab-button").forEach((item) => item.classList.toggle("active", item === button));
         $$("[data-panel]").forEach((panel) => panel.classList.toggle("active", panel.dataset.panel === tab));
-        window.setTimeout(renderCharts, 60);
+        window.setTimeout(() => {
+          renderCharts();
+          resizeChartsSoon();
+        }, 80);
       });
     });
   }
@@ -1419,21 +1424,55 @@
     drawReturnChart();
   }
 
+  function setupChartResizeObserver() {
+    if (!("ResizeObserver" in window)) return;
+    chartResizeObserver?.disconnect();
+    chartResizeObserver = new ResizeObserver((entries) => {
+      entries.forEach((entry) => {
+        const chart = chartInstances.get(entry.target.id);
+        if (chart && entry.contentRect.width > 20 && entry.contentRect.height > 20) chart.resize();
+      });
+    });
+    $$(".chart-host").forEach((element) => chartResizeObserver.observe(element));
+  }
+
+  function resizeChartsSoon() {
+    [40, 180, 420].forEach((delay) => {
+      window.setTimeout(() => {
+        chartInstances.forEach((chart, id) => {
+          const element = document.getElementById(id);
+          if (element && isRenderableChartElement(element)) chart.resize();
+        });
+      }, delay);
+    });
+  }
+
+  function isRenderableChartElement(element) {
+    const rect = element.getBoundingClientRect();
+    const style = window.getComputedStyle(element);
+    return rect.width > 20 && rect.height > 20 && style.display !== "none" && style.visibility !== "hidden";
+  }
+
+  function isCompactChart(element) {
+    return element.getBoundingClientRect().width < 560;
+  }
+
   function renderEChart(element, option) {
     if (!window.echarts) {
       element.classList.add("chart-fallback");
       element.textContent = "Chart engine loading...";
       return;
     }
+    if (!isRenderableChartElement(element)) return;
     element.classList.remove("chart-fallback");
-    element.textContent = "";
     let chart = chartInstances.get(element.id);
     if (!chart) {
+      element.textContent = "";
       chart = window.echarts.init(element, null, { renderer: "canvas" });
       chartInstances.set(element.id, chart);
     }
     chart.setOption(option, true);
-    chart.resize();
+    window.requestAnimationFrame(() => chart.resize());
   }
 
   function chartGradient(x0, y0, x1, y1, stops) {
@@ -1444,6 +1483,7 @@
   function drawPortfolioDonutChart() {
     const element = $("#portfolioDonutChart");
     if (!element) return;
+    const compact = isCompactChart(element);
     const current = getLatestCapital();
     const progress = clamp(current / state.settings.goal, 0, 1);
     renderEChart(element, {
@@ -1464,7 +1504,7 @@
             text: formatPercent(progress * 100),
             fill: "#ffffff",
             fontFamily: "IBM Plex Mono",
-            fontSize: 26,
+            fontSize: compact ? 23 : 26,
             fontWeight: 800,
             textAlign: "center"
           }
@@ -1515,6 +1555,7 @@
   function drawRiskDonutChart() {
     const element = $("#riskDonutChart");
     if (!element) return;
+    const compact = isCompactChart(element);
     const dailyStop = Math.max(0.01, state.settings.maxDailyLoss);
     const perTrade = Math.max(0.01, state.settings.riskPerTrade);
     const remaining = Math.max(0.01, 100 - dailyStop - perTrade * state.settings.maxTradesPerDay);
@@ -1532,7 +1573,7 @@
         icon: "roundRect",
         itemWidth: 10,
         itemHeight: 10,
-        textStyle: { color: "#66758a", fontFamily: "Manrope", fontWeight: 700, fontSize: 11 }
+        textStyle: { color: "#66758a", fontFamily: "Manrope", fontWeight: 700, fontSize: compact ? 10 : 11 }
       },
       graphic: [
         {
@@ -1543,7 +1584,7 @@
             text: formatPercent(dailyStop),
             fill: "#132033",
             fontFamily: "IBM Plex Mono",
-            fontSize: 22,
+            fontSize: compact ? 19 : 22,
             fontWeight: 800,
             textAlign: "center"
           }
@@ -1583,6 +1624,7 @@
   function drawRunwayChart() {
     const element = $("#runwayChart");
     if (!element) return;
+    const compact = isCompactChart(element);
     const projection = getProjection();
     const current = getLatestCapital();
     const days = Number.isFinite(projection.days) ? Math.min(projection.days, 180) : 90;
@@ -1611,17 +1653,17 @@
         textStyle: { color: "#f8fbff", fontFamily: "Manrope" },
         valueFormatter: (value) => moneyFormat.format(value)
       },
-      grid: { left: 64, right: 28, top: 30, bottom: 42 },
+      grid: { left: compact ? 46 : 64, right: compact ? 18 : 28, top: compact ? 24 : 30, bottom: compact ? 34 : 42 },
       xAxis: {
         type: "value",
-        name: "sessions",
+        name: compact ? "" : "sessions",
         nameGap: 22,
         min: 0,
         max: days,
         axisLine: { lineStyle: { color: "#c4d0dd" } },
         axisTick: { show: false },
         splitLine: { lineStyle: { color: "rgba(151, 167, 185, 0.16)" } },
-        axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: 11 }
+        axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: compact ? 10 : 11 }
       },
       yAxis: {
         type: "log",
@@ -1630,7 +1672,7 @@
         axisLine: { show: false },
         axisTick: { show: false },
         splitLine: { lineStyle: { color: "rgba(151, 167, 185, 0.18)" } },
-        axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: 11, formatter: shortMoney }
+        axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: compact ? 10 : 11, formatter: shortMoney }
       },
       series: [
         {
@@ -1665,7 +1707,7 @@
           encode: { x: 0, y: 1 },
           itemStyle: { color: "#245fc7", borderColor: "#ffffff", borderWidth: 2 },
           label: {
-            show: true,
+            show: !compact,
             formatter: (params) => params.value[2],
             position: "top",
             color: "#53657b",
@@ -1707,6 +1749,7 @@
   function drawEquityChart() {
     const element = $("#equityChart");
     if (!element) return;
+    const compact = isCompactChart(element);
     const entries = state.entries;
     const actualPoints = [{ label: "Start", value: state.settings.startingCapital }].concat(
       entries.map((entry) => ({ label: entry.date.slice(5), value: entry.end }))
@@ -1734,8 +1777,8 @@
             subtext: "Add your first trading day to replace this preview with actual equity.",
             left: "center",
             top: 18,
-            textStyle: { color: "#25384f", fontFamily: "Manrope", fontSize: 13, fontWeight: 850 },
-            subtextStyle: { color: "#7a899d", fontFamily: "Manrope", fontSize: 12, fontWeight: 650 }
+            textStyle: { color: "#25384f", fontFamily: "Manrope", fontSize: compact ? 11 : 13, fontWeight: 850 },
+            subtextStyle: { color: "#7a899d", fontFamily: "Manrope", fontSize: compact ? 10 : 12, fontWeight: 650 }
           },
       tooltip: {
         trigger: "axis",
@@ -1745,20 +1788,25 @@
         valueFormatter: (value) => (value == null ? "-" : moneyFormat.format(value))
       },
       legend: {
-        top: 10,
-        right: 14,
+        top: compact ? 6 : 10,
+        right: compact ? 8 : 14,
         itemWidth: 18,
         itemHeight: 8,
-        textStyle: { color: "#66758a", fontFamily: "Manrope", fontWeight: 760 }
+        textStyle: { color: "#66758a", fontFamily: "Manrope", fontSize: compact ? 10 : 12, fontWeight: 760 }
       },
-      grid: { left: 62, right: 28, top: entries.length ? 42 : 68, bottom: 42 },
+      grid: {
+        left: compact ? 46 : 62,
+        right: compact ? 16 : 28,
+        top: entries.length ? (compact ? 36 : 42) : compact ? 78 : 68,
+        bottom: compact ? 36 : 42
+      },
       xAxis: {
         type: "category",
         boundaryGap: false,
         data: categories,
         axisLine: { lineStyle: { color: "#c4d0dd" } },
         axisTick: { show: false },
-        axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: 11, interval: "auto" }
+        axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: compact ? 10 : 11, interval: "auto" }
       },
       yAxis: {
         type: "value",
@@ -1766,7 +1814,7 @@
         axisLine: { show: false },
         axisTick: { show: false },
         splitLine: { lineStyle: { color: "rgba(151, 167, 185, 0.2)" } },
-        axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: 11, formatter: shortMoney }
+        axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: compact ? 10 : 11, formatter: shortMoney }
       },
       series: [
         {
@@ -1802,6 +1850,7 @@
   function drawReturnChart() {
     const element = $("#returnChart");
     if (!element) return;
+    const compact = isCompactChart(element);
     const entries = state.entries.slice(-20);
     const categories = entries.length ? entries.map((entry) => entry.date.slice(5)) : Array.from({ length: 10 }, (_, index) => `T+${index + 1}`);
     const values = entries.length
@@ -1818,8 +1867,8 @@
             subtext: "Daily bars switch to actual results after your first log.",
             left: "center",
             top: 10,
-            textStyle: { color: "#25384f", fontFamily: "Manrope", fontSize: 12, fontWeight: 850 },
-            subtextStyle: { color: "#7a899d", fontFamily: "Manrope", fontSize: 11, fontWeight: 650 }
+            textStyle: { color: "#25384f", fontFamily: "Manrope", fontSize: compact ? 11 : 12, fontWeight: 850 },
+            subtextStyle: { color: "#7a899d", fontFamily: "Manrope", fontSize: compact ? 10 : 11, fontWeight: 650 }
           }
         : undefined,
       tooltip: {
@@ -1829,13 +1878,13 @@
         textStyle: { color: "#f8fbff", fontFamily: "Manrope" },
         valueFormatter: (value) => formatPercent(value)
       },
-      grid: { left: 42, right: 18, top: preview ? 58 : 18, bottom: 32 },
+      grid: { left: compact ? 36 : 42, right: compact ? 12 : 18, top: preview ? (compact ? 68 : 58) : 18, bottom: 32 },
       xAxis: {
         type: "category",
         data: categories,
         axisLine: { lineStyle: { color: "#c4d0dd" } },
         axisTick: { show: false },
-        axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: 10, interval: 0 }
+        axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: compact ? 9 : 10, interval: compact ? "auto" : 0 }
       },
       yAxis: {
         type: "value",
@@ -1844,7 +1893,7 @@
         axisLine: { show: false },
         axisTick: { show: false },
         splitLine: { lineStyle: { color: "rgba(151, 167, 185, 0.18)" } },
-        axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: 10, formatter: (value) => `${value}%` }
+        axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: compact ? 9 : 10, formatter: (value) => `${value}%` }
       },
       series: [
         {
