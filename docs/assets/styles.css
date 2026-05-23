@@ -43,7 +43,7 @@ body {
     linear-gradient(225deg, rgba(109, 84, 199, 0.12) 0%, rgba(255, 255, 255, 0) 34%),
     linear-gradient(180deg, #f9fbfc 0%, #edf3f6 42%, #f6f8fb 100%);
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    "Plus Jakarta Sans", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 15px;
   line-height: 1.5;
 }
@@ -144,9 +144,9 @@ a {
   border: 1px solid rgba(193, 206, 220, 0.82);
   border-radius: var(--radius);
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.82) 52%, rgba(224, 245, 236, 0.88)),
-    repeating-linear-gradient(135deg, rgba(36, 95, 199, 0.05) 0 1px, transparent 1px 18px);
-  box-shadow: var(--shadow);
+    linear-gradient(135deg, rgba(13, 22, 36, 0.98), rgba(20, 39, 55, 0.94) 48%, rgba(18, 93, 79, 0.9)),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 18px);
+  box-shadow: 0 24px 64px rgba(20, 31, 48, 0.2);
 }
 
 .eyebrow {
@@ -166,8 +166,9 @@ p {
 
 h1 {
   margin-bottom: 0;
-  color: #0f1d2e;
-  font-size: 38px;
+  color: #f8fbff;
+  font-size: 42px;
+  font-weight: 800;
   line-height: 1.02;
 }
 
@@ -196,12 +197,17 @@ h3 {
   width: fit-content;
   justify-self: end;
   padding: 6px 10px;
-  border: 1px solid rgba(193, 206, 220, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.08);
+  color: #dce8f5;
   font-size: 13px;
   font-weight: 750;
   white-space: nowrap;
+}
+
+.topbar .eyebrow {
+  color: #a9c8c3;
 }
 
 .tabs {
@@ -314,6 +320,7 @@ main {
   z-index: 1;
   display: block;
   color: #101d2f;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 30px;
   line-height: 1.06;
   word-break: break-word;
@@ -323,6 +330,184 @@ main {
   position: relative;
   z-index: 1;
   text-transform: none;
+}
+
+.cockpit-grid {
+  display: grid;
+  grid-template-columns: 1.08fr 1.42fr 1fr 1fr;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.visual-card {
+  min-height: 286px;
+  display: grid;
+  gap: 14px;
+  border: 1px solid rgba(193, 206, 220, 0.9);
+  border-radius: var(--radius);
+  padding: 18px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(246, 249, 252, 0.9)),
+    repeating-linear-gradient(90deg, rgba(36, 95, 199, 0.035) 0 1px, transparent 1px 18px);
+  box-shadow: var(--shadow-soft);
+}
+
+.visual-card-dark {
+  border-color: rgba(16, 29, 47, 0.86);
+  background:
+    linear-gradient(145deg, #111c2d 0%, #15273b 54%, #0d554c 100%),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 20px);
+  color: #f7fbff;
+  box-shadow: 0 20px 48px rgba(15, 27, 44, 0.22);
+}
+
+.visual-card-dark h2,
+.visual-card-dark .visual-stat-list strong {
+  color: #ffffff;
+}
+
+.visual-card-dark .eyebrow,
+.visual-card-dark .visual-stat-list span {
+  color: #a8c7c1;
+}
+
+.visual-card-wide {
+  grid-column: span 2;
+}
+
+.visual-card-heatmap {
+  grid-column: 1 / -1;
+  min-height: 190px;
+}
+
+.donut-layout {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.9fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.compact-donut {
+  grid-template-columns: minmax(132px, 0.75fr) minmax(0, 1fr);
+}
+
+.donut-canvas,
+.visual-chart {
+  display: block;
+  width: 100%;
+  min-height: 190px;
+}
+
+.visual-chart {
+  height: 220px;
+  border: 1px solid rgba(193, 206, 220, 0.72);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.visual-stat-list {
+  display: grid;
+  gap: 9px;
+}
+
+.visual-stat-list div {
+  display: grid;
+  gap: 3px;
+  padding: 10px 11px;
+  border: 1px solid rgba(193, 206, 220, 0.58);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.visual-card-dark .visual-stat-list div {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.visual-stat-list span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.visual-stat-list strong {
+  color: #132033;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 17px;
+  line-height: 1.1;
+}
+
+.heatmap {
+  display: grid;
+  grid-template-columns: repeat(26, minmax(0, 1fr));
+  gap: 5px;
+  min-height: 96px;
+  align-content: start;
+}
+
+.heat-cell {
+  aspect-ratio: 1;
+  border: 1px solid rgba(193, 206, 220, 0.52);
+  border-radius: 4px;
+  background: rgba(224, 232, 240, 0.72);
+}
+
+.heat-cell.gain-1 {
+  background: rgba(11, 143, 105, 0.35);
+}
+
+.heat-cell.gain-2 {
+  background: rgba(11, 143, 105, 0.62);
+}
+
+.heat-cell.gain-3 {
+  background: #0b8f69;
+}
+
+.heat-cell.loss-1 {
+  background: rgba(189, 57, 74, 0.32);
+}
+
+.heat-cell.loss-2 {
+  background: rgba(189, 57, 74, 0.62);
+}
+
+.heat-cell.loss-3 {
+  background: #bd394a;
+}
+
+.heat-cell.today {
+  border-color: #245fc7;
+  box-shadow: 0 0 0 2px rgba(36, 95, 199, 0.14);
+}
+
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.heatmap-legend i {
+  width: 18px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.heat-loss {
+  background: #bd394a;
+}
+
+.heat-flat {
+  background: #d8e2ea;
+}
+
+.heat-gain {
+  background: #0b8f69;
 }
 
 .accent-green {
@@ -788,6 +973,15 @@ tbody tr:last-child td {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .cockpit-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .visual-card-wide,
+  .visual-card-heatmap {
+    grid-column: 1 / -1;
+  }
+
   .layout-two,
   .scenario-grid,
   .research-grid {
@@ -825,11 +1019,21 @@ tbody tr:last-child td {
   }
 
   .metric-grid,
+  .cockpit-grid,
   .form-grid,
   .detail-list,
   .session-grid,
   .progress-wrap {
     grid-template-columns: 1fr;
+  }
+
+  .donut-layout,
+  .compact-donut {
+    grid-template-columns: 1fr;
+  }
+
+  .heatmap {
+    grid-template-columns: repeat(13, minmax(0, 1fr));
   }
 
   .progress-ring {

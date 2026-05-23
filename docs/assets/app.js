@@ -514,8 +514,25 @@
       ? `${moneyFormat.format(projection.nextMilestone.amount)} in ${integerFormat.format(projection.nextMilestone.days)} days`
       : "Goal reached";
     $("#projectionSummary").textContent = projection.summary;
+    renderCockpitStats(latestCapital, projection, progress);
 
     renderMilestones(projection.rate, projection.firstSession);
+  }
+
+  function renderCockpitStats(latestCapital, projection, progress) {
+    const gap = Math.max(0, state.settings.goal - latestCapital);
+    const next = projection.nextMilestone;
+    const dailyStop = latestCapital * (state.settings.maxDailyLoss / 100);
+    const perTrade = latestCapital * (state.settings.riskPerTrade / 100);
+    setText("#cockpitProgress", formatPercent(progress));
+    setText("#cockpitGap", moneyFormat.format(gap));
+    setText("#cockpitMilestone", next ? moneyFormat.format(next.amount) : "Goal reached");
+    setText("#cockpitDailyTarget", formatPercent(projection.rate * 100));
+    setText("#runwayPill", Number.isFinite(projection.days) ? `${integerFormat.format(projection.days)} sessions` : "Needs pace");
+    setText("#riskDailyStop", moneyFormat.format(dailyStop));
+    setText("#riskPerTrade", moneyFormat.format(perTrade));
+    setText("#riskTradeCap", String(state.settings.maxTradesPerDay));
+    setText("#riskBudgetPill", `${formatPercent(state.settings.maxDailyLoss)} stop`);
   }
 
   function renderMilestones(rate, firstSession) {
@@ -1241,8 +1258,153 @@
   }
 
   function renderCharts() {
+    drawPortfolioDonutChart();
+    drawRunwayChart();
+    drawRiskDonutChart();
+    renderActivityHeatmap();
     drawEquityChart();
     drawReturnChart();
+  }
+
+  function drawPortfolioDonutChart() {
+    const canvas = $("#portfolioDonutChart");
+    if (!canvas) return;
+    const { ctx, width, height } = prepCanvas(canvas);
+    const current = getLatestCapital();
+    const progress = clamp(current / state.settings.goal, 0, 1);
+    drawDonut(ctx, width, height, [
+      { value: progress, color: "#14b889" },
+      { value: Math.max(0, 1 - progress), color: "rgba(255, 255, 255, 0.16)" }
+    ], {
+      title: formatPercent(progress * 100),
+      subtitle: "to $1M",
+      textColor: "#ffffff",
+      subColor: "#a8c7c1"
+    });
+  }
+
+  function drawRiskDonutChart() {
+    const canvas = $("#riskDonutChart");
+    if (!canvas) return;
+    const { ctx, width, height } = prepCanvas(canvas);
+    const dailyStop = Math.max(0.01, state.settings.maxDailyLoss);
+    const perTrade = Math.max(0.01, state.settings.riskPerTrade);
+    const remaining = Math.max(0.01, 100 - dailyStop - perTrade * state.settings.maxTradesPerDay);
+    drawDonut(ctx, width, height, [
+      { value: dailyStop, color: "#bd394a" },
+      { value: perTrade * state.settings.maxTradesPerDay, color: "#b56a00" },
+      { value: remaining, color: "#d9e3ec" }
+    ], {
+      title: formatPercent(dailyStop),
+      subtitle: "daily stop",
+      textColor: "#132033",
+      subColor: "#66758a"
+    });
+  }
+
+  function drawRunwayChart() {
+    const canvas = $("#runwayChart");
+    if (!canvas) return;
+    const { ctx, width, height } = prepCanvas(canvas);
+    drawChartFrame(ctx, width, height);
+
+    const projection = getProjection();
+    const current = getLatestCapital();
+    const days = Number.isFinite(projection.days) ? Math.min(projection.days, 180) : 90;
+    const points = [];
+    for (let index = 0; index <= days; index += Math.max(1, Math.ceil(days / 36))) {
+      points.push({
+        day: index,
+        value: current * (1 + projection.rate) ** index
+      });
+    }
+    if (points[points.length - 1].day !== days) {
+      points.push({ day: days, value: current * (1 + projection.rate) ** days });
+    }
+
+    const milestones = [1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000]
+      .filter((value) => value >= current && value <= Math.max(state.settings.goal, points[points.length - 1].value));
+    const values = points.map((point) => point.value).concat(milestones);
+    const min = Math.min(...values, current) * 0.96;
+    const max = Math.max(...values, current * 1.1) * 1.04;
+    const mapX = (day) => 42 + (day / Math.max(1, days)) * (width - 68);
+    const mapY = (value) => height - 34 - ((value - min) / Math.max(1, max - min)) * (height - 68);
+
+    const area = ctx.createLinearGradient(0, 36, 0, height - 24);
+    area.addColorStop(0, "rgba(11, 143, 105, 0.22)");
+    area.addColorStop(1, "rgba(36, 95, 199, 0.02)");
+    ctx.beginPath();
+    points.forEach((point, index) => {
+      const x = mapX(point.day);
+      const y = mapY(point.value);
+      if (index === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.lineTo(mapX(days), height - 32);
+    ctx.lineTo(mapX(0), height - 32);
+    ctx.closePath();
+    ctx.fillStyle = area;
+    ctx.fill();
+
+    ctx.beginPath();
+    points.forEach((point, index) => {
+      const x = mapX(point.day);
+      const y = mapY(point.value);
+      if (index === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "#0b8f69";
+    ctx.stroke();
+
+    milestones.slice(0, 6).forEach((milestone) => {
+      const neededDays = daysToReach(current, milestone, projection.rate);
+      if (!Number.isFinite(neededDays) || neededDays > days) return;
+      const x = mapX(neededDays);
+      const y = mapY(milestone);
+      ctx.fillStyle = "#245fc7";
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#66758a";
+      ctx.font = "11px 'Plus Jakarta Sans', system-ui, sans-serif";
+      ctx.fillText(shortMoney(milestone), x + 7, y - 7);
+    });
+
+    ctx.fillStyle = "#25384f";
+    ctx.font = "700 12px 'Plus Jakarta Sans', system-ui, sans-serif";
+    ctx.fillText(`${integerFormat.format(days)} session view`, 14, 22);
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#66758a";
+    ctx.fillText(shortMoney(max / 1.04), width - 14, 22);
+    ctx.fillText(shortMoney(min / 0.96), width - 14, height - 12);
+    ctx.textAlign = "left";
+  }
+
+  function renderActivityHeatmap() {
+    const container = $("#activityHeatmap");
+    if (!container) return;
+    const entriesByDate = new Map(state.entries.map((entry) => [entry.date, entry]));
+    const today = getTodayIso("America/New_York");
+    const start = addDays(today, -64);
+    const cells = [];
+    for (let index = 0; index < 65; index += 1) {
+      const date = addDays(start, index);
+      const entry = entriesByDate.get(date);
+      const classes = ["heat-cell"];
+      let title = `${date}: no log`;
+      if (entry) {
+        const abs = Math.abs(entry.returnPct);
+        const intensity = abs >= 5 ? 3 : abs >= 2 ? 2 : 1;
+        classes.push(entry.returnPct >= 0 ? `gain-${intensity}` : `loss-${intensity}`);
+        title = `${date}: ${formatPercent(entry.returnPct)} | ${moneyFormat.format(entry.end)}`;
+      }
+      if (date === today) classes.push("today");
+      cells.push(`<span class="${classes.join(" ")}" title="${escapeHtml(title)}"></span>`);
+    }
+    container.innerHTML = cells.join("");
+    const logged = state.entries.filter((entry) => entry.date >= start && entry.date <= today).length;
+    setText("#heatmapPill", logged ? `${logged} logged days` : "No logs");
   }
 
   function drawEquityChart() {
@@ -1440,6 +1602,38 @@
     ctx.textAlign = "right";
     ctx.fillText("projected", width - 12, 18);
     ctx.textAlign = "left";
+  }
+
+  function drawDonut(ctx, width, height, segments, options) {
+    const cx = width / 2;
+    const cy = height / 2;
+    const radius = Math.min(width, height) * 0.38;
+    const lineWidth = Math.max(16, radius * 0.24);
+    const total = segments.reduce((sum, segment) => sum + Math.max(0, segment.value), 0) || 1;
+    let start = -Math.PI / 2;
+
+    ctx.clearRect(0, 0, width, height);
+    segments.forEach((segment) => {
+      const angle = (Math.max(0, segment.value) / total) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, start, start + angle);
+      ctx.strokeStyle = segment.color;
+      ctx.lineWidth = lineWidth;
+      ctx.lineCap = "round";
+      ctx.stroke();
+      start += angle;
+    });
+
+    ctx.fillStyle = options.textColor;
+    ctx.font = "700 24px 'IBM Plex Mono', ui-monospace, monospace";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(options.title, cx, cy - 7);
+    ctx.fillStyle = options.subColor;
+    ctx.font = "700 12px 'Plus Jakarta Sans', system-ui, sans-serif";
+    ctx.fillText(options.subtitle, cx, cy + 18);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
   }
 
   function getProjection() {
@@ -1879,11 +2073,24 @@
     return `${value >= 0 ? "" : "-"}${Math.abs(value).toFixed(2)}%`;
   }
 
+  function shortMoney(value) {
+    if (!Number.isFinite(value)) return "-";
+    const abs = Math.abs(value);
+    if (abs >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+    if (abs >= 1000) return `$${(value / 1000).toFixed(abs >= 10000 ? 0 : 1)}K`;
+    return moneyFormat.format(value);
+  }
+
   function setPill(selector, text, level) {
     const pill = $(selector);
     pill.textContent = text;
     pill.classList.remove("positive", "warning", "danger");
     if (level) pill.classList.add(level);
+  }
+
+  function setText(selector, text) {
+    const element = $(selector);
+    if (element) element.textContent = text;
   }
 
   function setTemporaryText(selector, text) {

@@ -8,6 +8,12 @@
       name="description"
       content="Personal offline-first dashboard untuk tracking performa trading US Stocks, proyeksi target, kalender bursa AS, dan manajemen psikologis."
     />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="assets/styles.css" />
     <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -86,6 +92,91 @@
               <strong id="metricDrawdown">0.00%</strong>
               <small id="metricDrawdownSub">Dari equity peak</small>
             </article>
+          </div>
+
+          <div class="cockpit-grid">
+            <section class="visual-card visual-card-dark">
+              <div class="panel-title">
+                <div>
+                  <p class="eyebrow">Portfolio cockpit</p>
+                  <h2>Goal exposure</h2>
+                </div>
+                <span class="status-pill positive" id="cockpitProgress">0.06%</span>
+              </div>
+              <div class="donut-layout">
+                <canvas id="portfolioDonutChart" class="donut-canvas" height="220" aria-label="Goal progress donut"></canvas>
+                <div class="visual-stat-list">
+                  <div>
+                    <span>Gap to goal</span>
+                    <strong id="cockpitGap">$999,360</strong>
+                  </div>
+                  <div>
+                    <span>Next unlock</span>
+                    <strong id="cockpitMilestone">$1,000</strong>
+                  </div>
+                  <div>
+                    <span>Daily target</span>
+                    <strong id="cockpitDailyTarget">5.00%</strong>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="visual-card visual-card-wide">
+              <div class="panel-title">
+                <div>
+                  <p class="eyebrow">Runway curve</p>
+                  <h2>Compounding path</h2>
+                </div>
+                <span class="status-pill" id="runwayPill">151 sessions</span>
+              </div>
+              <canvas id="runwayChart" class="visual-chart" height="220" aria-label="Projected runway curve"></canvas>
+            </section>
+
+            <section class="visual-card">
+              <div class="panel-title">
+                <div>
+                  <p class="eyebrow">Risk budget</p>
+                  <h2>Exposure control</h2>
+                </div>
+                <span class="status-pill warning" id="riskBudgetPill">Manual</span>
+              </div>
+              <div class="donut-layout compact-donut">
+                <canvas id="riskDonutChart" class="donut-canvas" height="190" aria-label="Risk budget donut"></canvas>
+                <div class="visual-stat-list">
+                  <div>
+                    <span>Daily stop</span>
+                    <strong id="riskDailyStop">$19.20</strong>
+                  </div>
+                  <div>
+                    <span>Risk/trade</span>
+                    <strong id="riskPerTrade">$6.40</strong>
+                  </div>
+                  <div>
+                    <span>Trade cap</span>
+                    <strong id="riskTradeCap">3</strong>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="visual-card visual-card-heatmap">
+              <div class="panel-title">
+                <div>
+                  <p class="eyebrow">Consistency map</p>
+                  <h2>Trading heatmap</h2>
+                </div>
+                <span class="status-pill" id="heatmapPill">No logs</span>
+              </div>
+              <div id="activityHeatmap" class="heatmap" aria-label="Trading activity heatmap"></div>
+              <div class="heatmap-legend">
+                <span>Loss</span>
+                <i class="heat-loss"></i>
+                <i class="heat-flat"></i>
+                <i class="heat-gain"></i>
+                <span>Gain</span>
+              </div>
+            </section>
           </div>
 
           <div class="layout-two">
