@@ -9,6 +9,8 @@
 
   const STORAGE_KEY = "ichwan.usTradingControlRoom.v1";
   const BACKEND_STORAGE_KEY = "ichwan.usTradingControlRoom.backend.v1";
+  const MEMORY_META_STORAGE_KEY = "ichwan.usTradingControlRoom.memoryMeta.v1";
+  const SNAPSHOT_STORAGE_KEY = "ichwan.usTradingControlRoom.checkpoints.v1";
   const DAY_MS = 24 * 60 * 60 * 1000;
   const RING_CIRCUMFERENCE = 327;
   const DEFAULT_STATE = {
@@ -27,6 +29,7 @@
 
   let state = loadState();
   let backendConfig = loadBackendConfig();
+  let memoryMeta = loadMemoryMeta();
   let renderTimer = null;
   let autoSyncTimer = null;
   const chartInstances = new Map();
@@ -85,8 +88,53 @@
   }
 
   function saveState() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizeState(state)));
+    const normalized = normalizeState(state);
+    state = normalized;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+    memoryMeta = {
+      ...memoryMeta,
+      lastSavedAt: new Date().toISOString(),
+      saveCount: Math.max(0, numberOr(memoryMeta.saveCount, 0)) + 1
+    };
+    saveMemoryMeta();
+    recordLocalCheckpoint(normalized);
     scheduleAutoSync();
+  }
+
+  function loadMemoryMeta() {
+    try {
+      const raw = localStorage.getItem(MEMORY_META_STORAGE_KEY);
+      if (!raw) return { lastSavedAt: "", saveCount: 0 };
+      const parsed = JSON.parse(raw);
+      return {
+        lastSavedAt: parsed.lastSavedAt || "",
+        saveCount: Math.max(0, Math.round(numberOr(parsed.saveCount, 0)))
+      };
+    } catch (error) {
+      console.warn("Falling back to default memory meta:", error);
+      return { lastSavedAt: "", saveCount: 0 };
+    }
+  }
+
+  function saveMemoryMeta() {
+    localStorage.setItem(MEMORY_META_STORAGE_KEY, JSON.stringify(memoryMeta));
+  }
+
+  function recordLocalCheckpoint(payload) {
+    try {
+      const raw = localStorage.getItem(SNAPSHOT_STORAGE_KEY);
+      const snapshots = raw ? JSON.parse(raw) : [];
+      const next = Array.isArray(snapshots) ? snapshots : [];
+      next.unshift({
+        at: memoryMeta.lastSavedAt || new Date().toISOString(),
+        entries: payload.entries.length,
+        capital: getLatestCapital(),
+        payload
+      });
+      localStorage.setItem(SNAPSHOT_STORAGE_KEY, JSON.stringify(next.slice(0, 12)));
+    } catch (error) {
+      console.warn("Checkpoint save skipped:", error);
+    }
   }
 
   function loadBackendConfig() {
@@ -391,7 +439,7 @@
         autoSync: $("#backendAutoSync").value
       };
       saveBackendConfig();
-      renderBackendStatus("Backend config saved.");
+      renderBackendStatus("Cloud backup settings saved.", "positive", null);
       refreshBackendStatus();
     });
 
@@ -463,6 +511,8 @@
     renderCoach();
     renderCalendar();
     renderPermission();
+    renderPerformanceInsights();
+    renderMemoryStatus();
     renderBackendStatus();
     renderResearch();
     renderCharts();
@@ -989,6 +1039,89 @@
     `;
   }
 
+  function renderPerformanceInsights() {
+    const entries = state.entries.slice(-20);
+    if (!entries.length) {
+      setPill("#edgeHealthPill", "Collecting data", "warning");
+      setText("#insightConsistency", "-");
+      setText("#insightWinRate", "-");
+      setText("#insightAvgReturn", "-");
+      setText("#insightDiscipline", "-");
+      setText("#edgeInsight", "Log at least one trading day to activate edge health tracking.");
+      return;
+    }
+
+    const greenDays = entries.filter((entry) => entry.returnPct > 0).length;
+    const avgReturn = average(entries.map((entry) => entry.returnPct));
+    const discipline = average(entries.map((entry) => numberOr(entry.discipline, 3)));
+    const tradeRows = entries.filter((entry) => entry.trades > 0);
+    const winRate = tradeRows.length
+      ? tradeRows.reduce((sum, entry) => sum + entry.wins, 0) / Math.max(1, tradeRows.reduce((sum, entry) => sum + entry.trades, 0))
+      : greenDays / entries.length;
+    const target = Math.max(0.1, state.settings.targetDailyReturn);
+    const drawdown = Math.abs(getDrawdownStats().current * 100);
+    const consistencyScore = clamp(
+      (greenDays / entries.length) * 34 +
+        clamp((avgReturn + target) / (target * 2), 0, 1.3) * 26 +
+        (discipline / 5) * 30 -
+        Math.min(18, drawdown * 1.2),
+      0,
+      100
+    );
+    const level = consistencyScore >= 74 ? "positive" : consistencyScore >= 52 ? "warning" : "danger";
+    const message = consistencyScore >= 74
+      ? "Edge health is constructive. Keep size tied to liquidity and process quality."
+      : consistencyScore >= 52
+        ? "Edge health is mixed. Prioritize A setups and reduce impulse trades."
+        : "Edge health is defensive. Reduce size and rebuild consistency before pushing growth.";
+
+    setPill("#edgeHealthPill", `${Math.round(consistencyScore)}/100`, level);
+    setText("#insightConsistency", `${Math.round(consistencyScore)}`);
+    setText("#insightWinRate", formatPercent(winRate * 100));
+    setText("#insightAvgReturn", formatPercent(avgReturn));
+    setText("#insightDiscipline", `${roundTo(discipline, 1)} / 5`);
+    setText("#edgeInsight", `${message} Sample: last ${entries.length} logged days.`);
+    $("#edgeInsight").className = `coach-banner ${level === "positive" ? "" : level}`;
+  }
+
+  function renderMemoryStatus() {
+    const storageReady = isLocalStorageAvailable();
+    const checkpoints = getLocalCheckpoints();
+    const latest = getLatestEntry();
+    const savedText = memoryMeta.lastSavedAt ? formatDateTimeCompact(memoryMeta.lastSavedAt) : "Not yet";
+    const statusText = storageReady ? "Local memory active" : "Storage blocked";
+    const statusLevel = storageReady ? "positive" : "danger";
+
+    setPill("#memoryStatus", statusText, statusLevel);
+    setText("#memoryStorageStatus", storageReady ? "Active" : "Blocked");
+    setText("#memoryEntryCount", `${state.entries.length} days`);
+    setText("#memoryLastSaved", savedText);
+    setText("#memoryCheckpointCount", `${checkpoints.length} saved`);
+    if (!backendConfig.url || !backendConfig.anonKey) setText("#backendRemoteStatus", "Local only");
+    setText("#entryStatus", latest ? `Saved ${formatCompactDate(latest.date)}` : "Local only");
+  }
+
+  function getLocalCheckpoints() {
+    try {
+      const raw = localStorage.getItem(SNAPSHOT_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function isLocalStorageAvailable() {
+    try {
+      const testKey = "__trading_control_room_storage_test__";
+      localStorage.setItem(testKey, "1");
+      localStorage.removeItem(testKey);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async function refreshBackendStatus() {
     renderBackendStatus();
     const client = getBackendClient(false);
@@ -996,23 +1129,24 @@
     try {
       const { data, error } = await client.auth.getUser();
       if (error || !data.user) {
-        renderBackendStatus("Backend configured. Sign in to sync.", "warning", null);
+        renderBackendStatus("Cloud backup is configured. Sign in to sync.", "warning", null);
         return;
       }
       await updateRemoteStatus(client, data.user);
     } catch (error) {
-      renderBackendStatus(`Backend check failed: ${error.message}`, "danger", null);
+      renderBackendStatus(`Cloud check failed: ${error.message}`, "danger", null);
     }
   }
 
   function renderBackendStatus(message, level, user) {
     const configured = Boolean(backendConfig.url && backendConfig.anonKey);
-    const statusText = configured ? "Configured" : "Offline local";
-    setPill("#backendStatusPill", statusText, configured ? "warning" : "");
-    $("#backendLastSync").textContent = backendConfig.lastSyncAt || "Never";
+    const statusText = configured ? (backendConfig.autoSync === "on" ? "Cloud auto-sync" : "Cloud ready") : "Local memory";
+    setPill("#backendStatusPill", statusText, configured ? "warning" : "positive");
+    $("#backendLastSync").textContent = backendConfig.lastSyncAt ? formatDateTimeCompact(backendConfig.lastSyncAt) : "Never";
+    if (!configured) $("#backendRemoteStatus").textContent = "Local only";
     $("#backendMessage").textContent = message || (configured
-      ? "Backend configured. Login via magic link, then push/pull/merge."
-      : "Add Supabase URL and publishable/anon key to enable cloud sync.");
+      ? "Cloud backup is optional. Login via magic link, then push, pull, or merge."
+      : "Local autosave and checkpoints are active on this browser.");
     if (level) {
       $("#backendMessage").className = `coach-banner ${level}`;
     } else {
@@ -1023,7 +1157,7 @@
 
   function getBackendClient(showAlert) {
     if (!backendConfig.url || !backendConfig.anonKey) {
-      if (showAlert) window.alert("Isi Supabase URL dan anon key dulu.");
+      if (showAlert) window.alert("Isi Supabase URL dan anon key dulu untuk cloud backup.");
       return null;
     }
     if (!window.supabase || typeof window.supabase.createClient !== "function") {
@@ -1053,7 +1187,7 @@
         options: { emailRedirectTo: window.location.href.split("#")[0] }
       });
       if (error) throw error;
-      renderBackendStatus("Magic link terkirim. Buka email di browser yang sama untuk menyelesaikan login.", "positive", null);
+      renderBackendStatus("Magic link sent. Open it in this same browser to finish login.", "positive", null);
     } catch (error) {
       renderBackendStatus(`Login link failed: ${error.message}`, "danger", null);
     }
@@ -1063,7 +1197,7 @@
     const client = getBackendClient(false);
     if (!client) return;
     await client.auth.signOut();
-    renderBackendStatus("Signed out from Supabase.", "warning", null);
+    renderBackendStatus("Signed out from cloud backup.", "warning", null);
   }
 
   async function pushBackendSnapshot(isAuto) {
@@ -1086,7 +1220,7 @@
       if (error) throw error;
       backendConfig.lastSyncAt = new Date().toISOString();
       saveBackendConfig();
-      renderBackendStatus("Local state pushed to Supabase.", "positive", user);
+      renderBackendStatus("Local state pushed to cloud backup.", "positive", user);
       return true;
     } catch (error) {
       if (!isAuto) renderBackendStatus(`Push failed: ${error.message}`, "danger", null);
@@ -1102,7 +1236,7 @@
     saveState();
     hydrateForms();
     renderAll();
-    renderBackendStatus("Remote snapshot pulled and applied locally.", "positive", remote.user);
+    renderBackendStatus("Cloud snapshot pulled and applied locally.", "positive", remote.user);
   }
 
   async function mergeBackendSnapshot() {
@@ -1113,7 +1247,7 @@
     hydrateForms();
     renderAll();
     await pushBackendSnapshot(true);
-    renderBackendStatus("Remote and local data merged, then pushed back.", "positive", remote.user);
+    renderBackendStatus("Cloud and local data merged, then backed up.", "positive", remote.user);
   }
 
   async function fetchRemoteSnapshot() {
@@ -1129,7 +1263,7 @@
         .maybeSingle();
       if (error) throw error;
       if (!data) {
-        renderBackendStatus("No remote snapshot found. Push local first.", "warning", user);
+        renderBackendStatus("No cloud snapshot found. Push local first.", "warning", user);
         return null;
       }
       backendConfig.lastSyncAt = data.updated_at || backendConfig.lastSyncAt;
@@ -1144,7 +1278,7 @@
   async function requireBackendUser(client) {
     const { data, error } = await client.auth.getUser();
     if (error || !data.user) {
-      renderBackendStatus("Sign in via magic link before sync.", "warning", null);
+      renderBackendStatus("Sign in via magic link before cloud sync.", "warning", null);
       return null;
     }
     return data.user;
@@ -1157,12 +1291,12 @@
       .eq("user_id", user.id)
       .maybeSingle();
     if (error) {
-      renderBackendStatus(`Backend configured, but table/schema is not ready: ${error.message}`, "danger", user);
+      renderBackendStatus(`Cloud table/schema is not ready: ${error.message}`, "danger", user);
       $("#backendRemoteStatus").textContent = "Schema missing";
       return;
     }
-    $("#backendRemoteStatus").textContent = data ? `Snapshot ${data.updated_at}` : "No snapshot";
-    renderBackendStatus(data ? "Signed in. Remote snapshot available." : "Signed in. Push local to create remote backup.", "positive", user);
+    $("#backendRemoteStatus").textContent = data ? `Cloud ${formatDateTimeCompact(data.updated_at)}` : "No cloud snapshot";
+    renderBackendStatus(data ? "Signed in. Cloud snapshot available." : "Signed in. Push local to create cloud backup.", "positive", user);
   }
 
   function mergeStates(localState, remoteState) {
@@ -2234,6 +2368,18 @@
     }).format(dateFromIso(iso));
   }
 
+  function formatDateTimeCompact(value) {
+    if (!value) return "Never";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }).format(date);
+  }
+
   function addDays(iso, count) {
     const date = dateFromIso(iso);
     date.setUTCDate(date.getUTCDate() + count);
@@ -2315,6 +2461,12 @@
   function roundTo(value, digits) {
     const factor = 10 ** digits;
     return Math.round((Number(value) + Number.EPSILON) * factor) / factor;
+  }
+
+  function average(values) {
+    const clean = values.filter((value) => Number.isFinite(value));
+    if (!clean.length) return 0;
+    return clean.reduce((sum, value) => sum + value, 0) / clean.length;
   }
 
   function clamp(value, min, max) {

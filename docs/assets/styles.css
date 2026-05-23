@@ -61,6 +61,42 @@ body::before {
     linear-gradient(90deg, rgba(36, 95, 199, 0.022) 1px, transparent 1px);
   background-size: 44px 44px;
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent 62%);
+  animation: gridDrift 34s linear infinite;
+}
+
+body::after {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: -1;
+  height: 46vh;
+  pointer-events: none;
+  content: "";
+  background:
+    repeating-linear-gradient(100deg, transparent 0 74px, rgba(13, 116, 107, 0.055) 74px 76px, transparent 76px 148px),
+    linear-gradient(180deg, transparent, rgba(36, 95, 199, 0.055));
+  transform: translate3d(0, 0, 0);
+  mask-image: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.58));
+  animation: tapeFlow 26s linear infinite;
+}
+
+@keyframes gridDrift {
+  from {
+    background-position: 0 0, 0 0;
+  }
+
+  to {
+    background-position: 88px 44px, 88px 44px;
+  }
+}
+
+@keyframes tapeFlow {
+  from {
+    background-position: 0 0, 0 0;
+  }
+
+  to {
+    background-position: 220px 0, 0 0;
+  }
 }
 
 button,
@@ -209,6 +245,12 @@ h3 {
   white-space: nowrap;
 }
 
+#memoryStatus {
+  border-color: rgba(67, 240, 183, 0.22);
+  background: rgba(224, 245, 236, 0.12);
+  color: #c9fff1;
+}
+
 .topbar .eyebrow {
   color: #a9c8c3;
 }
@@ -335,6 +377,50 @@ main {
   position: relative;
   z-index: 1;
   text-transform: none;
+}
+
+.insight-panel {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.97), rgba(247, 251, 252, 0.9)),
+    repeating-linear-gradient(90deg, rgba(13, 116, 107, 0.025) 0 1px, transparent 1px 24px);
+}
+
+.insight-grid,
+.vault-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.insight-grid article,
+.vault-grid article {
+  min-height: 86px;
+  display: grid;
+  align-content: space-between;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid rgba(193, 206, 220, 0.74);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.insight-grid span,
+.vault-grid span,
+.vault-sync-row span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.insight-grid strong,
+.vault-grid strong,
+.vault-sync-row strong {
+  color: #101d2f;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 22px;
+  line-height: 1.05;
 }
 
 .cockpit-grid {
@@ -848,6 +934,65 @@ textarea {
   font-size: 13px;
 }
 
+.data-vault-panel {
+  background:
+    linear-gradient(140deg, rgba(255, 255, 255, 0.98), rgba(244, 250, 248, 0.92) 56%, rgba(229, 238, 252, 0.52)),
+    repeating-linear-gradient(90deg, rgba(13, 116, 107, 0.026) 0 1px, transparent 1px 28px);
+}
+
+.data-vault-panel .vault-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.vault-actions {
+  padding-top: 2px;
+}
+
+.vault-cloud {
+  border: 1px solid rgba(193, 206, 220, 0.74);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.58);
+  overflow: hidden;
+}
+
+.vault-cloud summary {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  color: #24384f;
+  cursor: pointer;
+  font-weight: 830;
+  list-style: none;
+}
+
+.vault-cloud summary::-webkit-details-marker {
+  display: none;
+}
+
+.vault-cloud[open] summary {
+  border-bottom: 1px solid rgba(193, 206, 220, 0.68);
+}
+
+.vault-cloud form,
+.vault-sync-row,
+.vault-cloud .coach-banner {
+  margin: 14px;
+}
+
+.vault-sync-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(193, 206, 220, 0.64);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.68);
+}
+
 .table-wrap {
   width: 100%;
   overflow-x: auto;
@@ -1183,6 +1328,12 @@ tbody tr:last-child td {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .insight-grid,
+  .vault-grid,
+  .data-vault-panel .vault-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .cockpit-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1230,6 +1381,9 @@ tbody tr:last-child td {
   }
 
   .metric-grid,
+  .insight-grid,
+  .vault-grid,
+  .data-vault-panel .vault-grid,
   .cockpit-grid,
   .form-grid,
   .detail-list,
@@ -1274,5 +1428,15 @@ tbody tr:last-child td {
 
   .chart.compact {
     height: 210px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
   }
 }

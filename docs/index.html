@@ -14,12 +14,12 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Manrope:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="assets/styles.css?v=20260523-refined" />
+    <link rel="stylesheet" href="assets/styles.css?v=20260523-vault" />
     <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-    <script defer src="assets/market-data.js?v=20260523-refined"></script>
-    <script defer src="assets/app.js?v=20260523-refined"></script>
+    <script defer src="assets/market-data.js?v=20260523-vault"></script>
+    <script defer src="assets/app.js?v=20260523-vault"></script>
   </head>
   <body>
     <div class="app-shell">
@@ -29,6 +29,7 @@
           <h1>Trading Control Room</h1>
         </div>
         <div class="clock-stack" aria-live="polite">
+          <span id="memoryStatus">Memory vault ready</span>
           <span id="jstClock">JST -</span>
           <span id="etClock">ET -</span>
         </div>
@@ -49,9 +50,6 @@
         </button>
         <button class="tab-button" type="button" data-tab="risk">
           <i data-lucide="activity"></i><span>Risk lab</span>
-        </button>
-        <button class="tab-button" type="button" data-tab="backend">
-          <i data-lucide="database"></i><span>Backend</span>
         </button>
         <button class="tab-button" type="button" data-tab="research">
           <i data-lucide="book-open-check"></i><span>Research</span>
@@ -179,6 +177,37 @@
               </div>
             </section>
           </div>
+
+          <section class="tool-panel insight-panel">
+            <div class="panel-title">
+              <div>
+                <p class="eyebrow">Performance intelligence</p>
+                <h2>Edge health</h2>
+              </div>
+              <span class="status-pill" id="edgeHealthPill">Collecting data</span>
+            </div>
+            <div class="insight-grid">
+              <article>
+                <span>Consistency</span>
+                <strong id="insightConsistency">-</strong>
+              </article>
+              <article>
+                <span>Win quality</span>
+                <strong id="insightWinRate">-</strong>
+              </article>
+              <article>
+                <span>Average day</span>
+                <strong id="insightAvgReturn">-</strong>
+              </article>
+              <article>
+                <span>Discipline</span>
+                <strong id="insightDiscipline">-</strong>
+              </article>
+            </div>
+            <div class="coach-banner" id="edgeInsight">
+              Start logging daily results to activate performance intelligence.
+            </div>
+          </section>
 
           <div class="layout-two">
             <section class="tool-panel hero-panel">
@@ -430,23 +459,108 @@
                   <button class="primary" type="submit">
                     <i data-lucide="settings"></i><span>Save settings</span>
                   </button>
-                  <button id="exportJson" type="button">
-                    <i data-lucide="download"></i><span>Export JSON</span>
-                  </button>
-                  <button id="exportCsv" type="button">
-                    <i data-lucide="file-down"></i><span>Export CSV</span>
-                  </button>
-                  <button id="importJsonButton" type="button">
-                    <i data-lucide="upload"></i><span>Import JSON</span>
-                  </button>
-                  <input id="importJson" class="hidden-file" type="file" accept="application/json" />
                 </div>
               </form>
-              <p class="privacy-note">
-                Data performa disimpan di browser ini saja. Export file sebelum clear browser data atau pindah device.
-              </p>
             </section>
           </div>
+
+          <section class="tool-panel data-vault-panel">
+            <div class="panel-title">
+              <div>
+                <p class="eyebrow">Data vault</p>
+                <h2>Autosave and backup</h2>
+              </div>
+              <span class="status-pill positive" id="backendStatusPill">Local memory</span>
+            </div>
+            <div class="vault-grid">
+              <article>
+                <span>Autosave</span>
+                <strong id="memoryStorageStatus">Active</strong>
+              </article>
+              <article>
+                <span>Saved days</span>
+                <strong id="memoryEntryCount">0</strong>
+              </article>
+              <article>
+                <span>Last local save</span>
+                <strong id="memoryLastSaved">Never</strong>
+              </article>
+              <article>
+                <span>Checkpoints</span>
+                <strong id="memoryCheckpointCount">0</strong>
+              </article>
+              <article>
+                <span>Cloud status</span>
+                <strong id="backendRemoteStatus">Local only</strong>
+              </article>
+            </div>
+            <div class="form-actions vault-actions">
+              <button id="exportJson" type="button">
+                <i data-lucide="download"></i><span>Export JSON</span>
+              </button>
+              <button id="exportCsv" type="button">
+                <i data-lucide="file-down"></i><span>Export CSV</span>
+              </button>
+              <button id="importJsonButton" type="button">
+                <i data-lucide="upload"></i><span>Import JSON</span>
+              </button>
+              <input id="importJson" class="hidden-file" type="file" accept="application/json" />
+            </div>
+            <details class="vault-cloud">
+              <summary>
+                <span>Optional cloud backup</span>
+                <span class="status-pill" id="backendUserPill">Not signed in</span>
+              </summary>
+              <form id="backendForm" class="form-grid compact-form">
+                <label class="wide">
+                  Supabase project URL
+                  <input id="backendUrl" type="url" placeholder="https://project-ref.supabase.co" autocomplete="off" />
+                </label>
+                <label class="wide">
+                  Supabase publishable / anon key
+                  <input id="backendAnonKey" type="password" autocomplete="off" />
+                </label>
+                <label>
+                  Email login
+                  <input id="backendEmail" type="email" placeholder="you@example.com" autocomplete="email" />
+                </label>
+                <label>
+                  Auto sync
+                  <select id="backendAutoSync">
+                    <option value="off">Manual</option>
+                    <option value="on">After save</option>
+                  </select>
+                </label>
+                <div class="form-actions wide">
+                  <button class="primary" type="submit">
+                    <i data-lucide="save"></i><span>Save sync</span>
+                  </button>
+                  <button id="backendSendOtp" type="button">
+                    <i data-lucide="mail"></i><span>Login link</span>
+                  </button>
+                  <button id="backendSignOut" type="button">
+                    <i data-lucide="log-out"></i><span>Sign out</span>
+                  </button>
+                  <button id="backendPush" type="button">
+                    <i data-lucide="cloud-upload"></i><span>Push</span>
+                  </button>
+                  <button id="backendPull" type="button">
+                    <i data-lucide="cloud-download"></i><span>Pull</span>
+                  </button>
+                  <button id="backendMerge" type="button">
+                    <i data-lucide="merge"></i><span>Merge</span>
+                  </button>
+                </div>
+              </form>
+              <div class="vault-sync-row">
+                <span>Last cloud sync</span>
+                <strong id="backendLastSync">Never</strong>
+              </div>
+              <div class="coach-banner" id="backendMessage">
+                Local autosave is active. Cloud backup is optional.
+              </div>
+            </details>
+          </section>
 
           <section class="tool-panel">
             <div class="panel-title">
@@ -701,89 +815,6 @@
                 </label>
               </form>
               <div class="coach-card" id="permissionCard"></div>
-            </section>
-          </div>
-        </section>
-
-        <section class="tab-panel" data-panel="backend">
-          <div class="layout-two">
-            <section class="tool-panel">
-              <div class="panel-title">
-                <div>
-                  <p class="eyebrow">Supabase backend</p>
-                  <h2>Cloud sync</h2>
-                </div>
-                <span class="status-pill" id="backendStatusPill">Offline local</span>
-              </div>
-              <form id="backendForm" class="form-grid compact-form">
-                <label class="wide">
-                  Supabase project URL
-                  <input id="backendUrl" type="url" placeholder="https://project-ref.supabase.co" autocomplete="off" />
-                </label>
-                <label class="wide">
-                  Supabase publishable / anon key
-                  <input id="backendAnonKey" type="password" autocomplete="off" />
-                </label>
-                <label>
-                  Email login
-                  <input id="backendEmail" type="email" placeholder="you@example.com" autocomplete="email" />
-                </label>
-                <label>
-                  Auto sync
-                  <select id="backendAutoSync">
-                    <option value="off">Off</option>
-                    <option value="on">On after save</option>
-                  </select>
-                </label>
-                <div class="form-actions wide">
-                  <button class="primary" type="submit">
-                    <i data-lucide="save"></i><span>Save backend config</span>
-                  </button>
-                  <button id="backendSendOtp" type="button">
-                    <i data-lucide="mail"></i><span>Send login link</span>
-                  </button>
-                  <button id="backendSignOut" type="button">
-                    <i data-lucide="log-out"></i><span>Sign out</span>
-                  </button>
-                </div>
-              </form>
-              <p class="privacy-note">
-                Backend config disimpan di browser ini saja. Public anon key memang aman dipakai di frontend jika RLS aktif.
-              </p>
-            </section>
-
-            <section class="tool-panel">
-              <div class="panel-title">
-                <div>
-                  <p class="eyebrow">Sync controls</p>
-                  <h2>Backup and restore</h2>
-                </div>
-                <span class="status-pill" id="backendUserPill">Not signed in</span>
-              </div>
-              <div class="session-grid">
-                <div>
-                  <span>Last sync</span>
-                  <strong id="backendLastSync">Never</strong>
-                </div>
-                <div>
-                  <span>Remote status</span>
-                  <strong id="backendRemoteStatus">Unknown</strong>
-                </div>
-              </div>
-              <div class="form-actions">
-                <button id="backendPush" type="button">
-                  <i data-lucide="cloud-upload"></i><span>Push local</span>
-                </button>
-                <button id="backendPull" type="button">
-                  <i data-lucide="cloud-download"></i><span>Pull remote</span>
-                </button>
-                <button id="backendMerge" type="button">
-                  <i data-lucide="merge"></i><span>Merge</span>
-                </button>
-              </div>
-              <div class="coach-banner" id="backendMessage">
-                Supabase sync akan aktif setelah schema migration diterapkan dan Anda login via magic link.
-              </div>
             </section>
           </div>
         </section>
