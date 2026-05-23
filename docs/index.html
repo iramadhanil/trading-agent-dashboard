@@ -11,15 +11,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Manrope:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="assets/styles.css?v=20260523-procharts" />
+    <link rel="stylesheet" href="assets/styles.css?v=20260523-refined" />
     <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-    <script defer src="assets/market-data.js?v=20260523-procharts"></script>
-    <script defer src="assets/app.js?v=20260523-procharts"></script>
+    <script defer src="assets/market-data.js?v=20260523-refined"></script>
+    <script defer src="assets/app.js?v=20260523-refined"></script>
   </head>
   <body>
     <div class="app-shell">
@@ -184,10 +184,10 @@
             <section class="tool-panel hero-panel">
               <div class="panel-title">
                 <div>
-                  <p class="eyebrow">Projection</p>
-                  <h2>Path to $1,000,000</h2>
+                  <p class="eyebrow">Runway</p>
+                  <h2>$1M Plan</h2>
                 </div>
-                <span class="status-pill" id="projectionModePill">Target mode</span>
+                <span class="status-pill" id="projectionModePill">Target</span>
               </div>
 
               <div class="progress-wrap">
@@ -198,7 +198,7 @@
                   </svg>
                   <div>
                     <strong id="goalProgress">0.06%</strong>
-                    <span>of goal</span>
+                    <span>goal</span>
                   </div>
                 </div>
                 <div class="projection-copy">
@@ -207,15 +207,15 @@
                   </p>
                   <dl class="detail-list">
                     <div>
-                      <dt>Target date</dt>
+                      <dt>ETA</dt>
                       <dd id="targetDate">-</dd>
                     </div>
                     <div>
-                      <dt>First counted session</dt>
+                      <dt>Start</dt>
                       <dd id="firstSession">-</dd>
                     </div>
                     <div>
-                      <dt>Next milestone</dt>
+                      <dt>Next</dt>
                       <dd id="nextMilestone">-</dd>
                     </div>
                   </dl>

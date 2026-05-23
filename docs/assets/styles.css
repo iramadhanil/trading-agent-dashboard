@@ -39,11 +39,11 @@ body {
   margin: 0;
   color: var(--ink);
   background:
-    linear-gradient(135deg, rgba(11, 143, 105, 0.14) 0%, rgba(255, 255, 255, 0) 32%),
-    linear-gradient(225deg, rgba(109, 84, 199, 0.12) 0%, rgba(255, 255, 255, 0) 34%),
-    linear-gradient(180deg, #f9fbfc 0%, #edf3f6 42%, #f6f8fb 100%);
+    linear-gradient(135deg, rgba(11, 143, 105, 0.08) 0%, rgba(255, 255, 255, 0) 30%),
+    linear-gradient(225deg, rgba(36, 95, 199, 0.07) 0%, rgba(255, 255, 255, 0) 32%),
+    linear-gradient(180deg, #f8fbfc 0%, #eef4f7 46%, #f7f9fb 100%);
   font-family:
-    "Plus Jakarta Sans", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    "Manrope", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -57,8 +57,8 @@ body::before {
   pointer-events: none;
   content: "";
   background-image:
-    linear-gradient(rgba(36, 95, 199, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(36, 95, 199, 0.04) 1px, transparent 1px);
+    linear-gradient(rgba(36, 95, 199, 0.026) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(36, 95, 199, 0.022) 1px, transparent 1px);
   background-size: 44px 44px;
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent 62%);
 }
@@ -177,8 +177,9 @@ h1 {
 h2 {
   margin-bottom: 0;
   color: #162337;
-  font-size: 21px;
+  font-size: 20px;
   line-height: 1.18;
+  font-weight: 780;
 }
 
 h3 {
@@ -572,14 +573,14 @@ main {
 }
 
 .tool-panel {
-  padding: 20px;
+  padding: 22px 24px;
   display: grid;
-  gap: 16px;
+  gap: 18px;
 }
 
 .hero-panel {
   background:
-    linear-gradient(150deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.92) 55%, rgba(229, 238, 252, 0.72) 100%);
+    linear-gradient(150deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 252, 253, 0.94) 62%, rgba(233, 241, 248, 0.72) 100%);
 }
 
 .market-panel {
@@ -628,21 +629,21 @@ main {
 
 .progress-wrap {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
-  gap: 24px;
+  grid-template-columns: 188px minmax(0, 1fr);
+  gap: 22px;
   align-items: center;
 }
 
 .progress-ring {
   position: relative;
-  width: 198px;
+  width: 176px;
   aspect-ratio: 1;
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: linear-gradient(145deg, #ffffff, #eef4f7);
+  background: linear-gradient(145deg, #ffffff, #f1f6f8);
   box-shadow:
-    0 16px 26px rgba(31, 49, 72, 0.1),
+    0 12px 24px rgba(31, 49, 72, 0.08),
     inset 0 0 0 1px rgba(255, 255, 255, 0.7);
 }
 
@@ -656,7 +657,7 @@ main {
 
 .progress-ring circle {
   fill: none;
-  stroke-width: 10;
+  stroke-width: 8;
 }
 
 .ring-bg {
@@ -680,31 +681,42 @@ main {
 }
 
 .progress-ring strong {
-  font-size: 31px;
+  color: #101d2f;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 28px;
+  font-weight: 700;
   line-height: 1;
 }
 
 .progress-ring span {
   color: var(--muted);
-  font-size: 13px;
-  font-weight: 720;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 .projection-copy p {
   max-width: 760px;
-  color: #273a51;
-  font-size: 17px;
-  line-height: 1.48;
+  margin-bottom: 12px;
+  color: #526579;
+  font-size: 14px;
+  line-height: 1.35;
+  font-weight: 760;
 }
 
 .detail-list {
-  margin: 16px 0 0;
+  margin: 0;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 18px;
 }
 
-.detail-list div,
+.detail-list div {
+  min-height: 56px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(193, 206, 220, 0.82);
+}
+
 .session-grid div {
   min-height: 80px;
   border: 1px solid rgba(193, 206, 220, 0.82);
@@ -722,9 +734,10 @@ main {
 }
 
 .detail-list dd {
-  margin: 7px 0 0;
+  margin: 5px 0 0;
   color: #122033;
-  font-weight: 850;
+  font-weight: 780;
+  font-size: 16px;
 }
 
 .chart {
@@ -1237,7 +1250,7 @@ tbody tr:last-child td {
   }
 
   .progress-ring {
-    width: min(198px, 100%);
+    width: min(176px, 100%);
     justify-self: center;
   }
 

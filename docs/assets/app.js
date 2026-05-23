@@ -500,10 +500,10 @@
     $("#metricCapital").textContent = moneyFormat.format(latestCapital);
     $("#metricReturn").textContent = `Cumulative return ${formatPercent(cumulativeReturn)}`;
     $("#metricEta").textContent = Number.isFinite(projection.days)
-      ? `${integerFormat.format(projection.days)} days`
+      ? `${integerFormat.format(projection.days)} sessions`
       : "Need positive pace";
     $("#metricEtaSub").textContent = projection.targetDate
-      ? `ETA ${formatDate(projection.targetDate)}`
+      ? `ETA ${formatCompactDate(projection.targetDate)}`
       : "Trading days tersisa";
     $("#metricPace").textContent = formatPercent(projection.rate * 100);
     $("#metricPaceSub").textContent = projection.modeLabel;
@@ -512,10 +512,10 @@
     $("#goalProgress").textContent = `${formatPercent(progress)}`;
     $("#goalRing").style.strokeDashoffset = String(RING_CIRCUMFERENCE * (1 - progress / 100));
     $("#projectionModePill").textContent = projection.modeLabel;
-    $("#targetDate").textContent = projection.targetDate ? `${formatDate(projection.targetDate)} (${projection.targetDate})` : "-";
-    $("#firstSession").textContent = projection.firstSession ? `${formatDate(projection.firstSession)} (${projection.firstSession})` : "-";
+    $("#targetDate").textContent = projection.targetDate ? formatCompactDate(projection.targetDate) : "-";
+    $("#firstSession").textContent = projection.firstSession ? formatCompactDate(projection.firstSession) : "-";
     $("#nextMilestone").textContent = projection.nextMilestone
-      ? `${moneyFormat.format(projection.nextMilestone.amount)} in ${integerFormat.format(projection.nextMilestone.days)} days`
+      ? `${shortMoney(projection.nextMilestone.amount)} / ${integerFormat.format(projection.nextMilestone.days)} sessions`
       : "Goal reached";
     $("#projectionSummary").textContent = projection.summary;
     renderCockpitStats(latestCapital, projection, progress);
@@ -1319,7 +1319,7 @@
         formatter: "{b}: {d}%",
         backgroundColor: "rgba(10, 18, 30, 0.92)",
         borderWidth: 0,
-        textStyle: { color: "#f8fbff", fontFamily: "Plus Jakarta Sans" }
+        textStyle: { color: "#f8fbff", fontFamily: "Manrope" }
       },
       graphic: [
         {
@@ -1342,7 +1342,7 @@
           style: {
             text: "TARGET PROGRESS",
             fill: "#9fc6bf",
-            fontFamily: "Plus Jakarta Sans",
+            fontFamily: "Manrope",
             fontSize: 11,
             fontWeight: 800,
             textAlign: "center"
@@ -1391,14 +1391,14 @@
         formatter: (params) => `${params.name}<br><strong>${formatPercent(params.value)}</strong>`,
         backgroundColor: "rgba(17, 28, 45, 0.94)",
         borderWidth: 0,
-        textStyle: { color: "#f8fbff", fontFamily: "Plus Jakarta Sans" }
+        textStyle: { color: "#f8fbff", fontFamily: "Manrope" }
       },
       legend: {
         bottom: 0,
         icon: "roundRect",
         itemWidth: 10,
         itemHeight: 10,
-        textStyle: { color: "#66758a", fontFamily: "Plus Jakarta Sans", fontWeight: 700, fontSize: 11 }
+        textStyle: { color: "#66758a", fontFamily: "Manrope", fontWeight: 700, fontSize: 11 }
       },
       graphic: [
         {
@@ -1421,7 +1421,7 @@
           style: {
             text: "DAILY STOP",
             fill: "#66758a",
-            fontFamily: "Plus Jakarta Sans",
+            fontFamily: "Manrope",
             fontSize: 10,
             fontWeight: 800,
             textAlign: "center"
@@ -1474,7 +1474,7 @@
         trigger: "axis",
         backgroundColor: "rgba(17, 28, 45, 0.94)",
         borderWidth: 0,
-        textStyle: { color: "#f8fbff", fontFamily: "Plus Jakarta Sans" },
+        textStyle: { color: "#f8fbff", fontFamily: "Manrope" },
         valueFormatter: (value) => moneyFormat.format(value)
       },
       grid: { left: 64, right: 28, top: 30, bottom: 42 },
@@ -1537,7 +1537,7 @@
             color: "#53657b",
             fontSize: 11,
             fontWeight: 800,
-            fontFamily: "Plus Jakarta Sans"
+            fontFamily: "Manrope"
           }
         }
       ]
@@ -1600,14 +1600,14 @@
             subtext: "Add your first trading day to replace this preview with actual equity.",
             left: "center",
             top: 18,
-            textStyle: { color: "#25384f", fontFamily: "Plus Jakarta Sans", fontSize: 13, fontWeight: 850 },
-            subtextStyle: { color: "#7a899d", fontFamily: "Plus Jakarta Sans", fontSize: 12, fontWeight: 650 }
+            textStyle: { color: "#25384f", fontFamily: "Manrope", fontSize: 13, fontWeight: 850 },
+            subtextStyle: { color: "#7a899d", fontFamily: "Manrope", fontSize: 12, fontWeight: 650 }
           },
       tooltip: {
         trigger: "axis",
         backgroundColor: "rgba(17, 28, 45, 0.94)",
         borderWidth: 0,
-        textStyle: { color: "#f8fbff", fontFamily: "Plus Jakarta Sans" },
+        textStyle: { color: "#f8fbff", fontFamily: "Manrope" },
         valueFormatter: (value) => (value == null ? "-" : moneyFormat.format(value))
       },
       legend: {
@@ -1615,7 +1615,7 @@
         right: 14,
         itemWidth: 18,
         itemHeight: 8,
-        textStyle: { color: "#66758a", fontFamily: "Plus Jakarta Sans", fontWeight: 760 }
+        textStyle: { color: "#66758a", fontFamily: "Manrope", fontWeight: 760 }
       },
       grid: { left: 62, right: 28, top: entries.length ? 42 : 68, bottom: 42 },
       xAxis: {
@@ -1684,15 +1684,15 @@
             subtext: "Daily bars switch to actual results after your first log.",
             left: "center",
             top: 10,
-            textStyle: { color: "#25384f", fontFamily: "Plus Jakarta Sans", fontSize: 12, fontWeight: 850 },
-            subtextStyle: { color: "#7a899d", fontFamily: "Plus Jakarta Sans", fontSize: 11, fontWeight: 650 }
+            textStyle: { color: "#25384f", fontFamily: "Manrope", fontSize: 12, fontWeight: 850 },
+            subtextStyle: { color: "#7a899d", fontFamily: "Manrope", fontSize: 11, fontWeight: 650 }
           }
         : undefined,
       tooltip: {
         trigger: "axis",
         backgroundColor: "rgba(17, 28, 45, 0.94)",
         borderWidth: 0,
-        textStyle: { color: "#f8fbff", fontFamily: "Plus Jakarta Sans" },
+        textStyle: { color: "#f8fbff", fontFamily: "Manrope" },
         valueFormatter: (value) => formatPercent(value)
       },
       grid: { left: 42, right: 18, top: preview ? 58 : 18, bottom: 32 },
@@ -1883,7 +1883,7 @@
     ctx.textBaseline = "middle";
     ctx.fillText(options.title, cx, cy - 7);
     ctx.fillStyle = options.subColor;
-    ctx.font = "700 12px 'Plus Jakarta Sans', system-ui, sans-serif";
+    ctx.font = "700 12px 'Manrope', system-ui, sans-serif";
     ctx.fillText(options.subtitle, cx, cy + 18);
     ctx.textAlign = "left";
     ctx.textBaseline = "alphabetic";
@@ -1899,8 +1899,8 @@
     const nextMilestone = getNextMilestone(current, rate, firstSession);
     const modeLabel = getProjectionModeLabel();
     const summary = Number.isFinite(days)
-      ? `${moneyFormat.format(current)} menuju ${moneyFormat.format(goal)} butuh sekitar ${integerFormat.format(days)} trading sessions pada pace ${formatPercent(rate * 100)}. Calendar memakai libur/early close NYSE/Nasdaq dan manual override jika ada penutupan mendadak.`
-      : "Pace projection belum positif. Fokus dulu ke stabilitas, bukan target date.";
+      ? `${formatPercent(rate * 100)} pace | ${integerFormat.format(days)} sessions | ETA ${targetDate ? formatCompactDate(targetDate) : "pending"}`
+      : "Pace unavailable. Stabilize execution first.";
     return { current, goal, rate, days, firstSession, targetDate, nextMilestone, modeLabel, summary };
   }
 
@@ -1914,9 +1914,9 @@
   }
 
   function getProjectionModeLabel() {
-    if (state.settings.projectionMode === "actual") return "Actual pace";
-    if (state.settings.projectionMode === "conservative") return "Conservative pace";
-    return "Target mode";
+    if (state.settings.projectionMode === "actual") return "Actual";
+    if (state.settings.projectionMode === "conservative") return "Blended";
+    return "Target";
   }
 
   function getNextMilestone(current, rate, firstSession) {
@@ -2224,6 +2224,16 @@
     }).format(date);
   }
 
+  function formatCompactDate(iso) {
+    if (!isIsoDate(iso)) return "-";
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      timeZone: "UTC"
+    }).format(dateFromIso(iso));
+  }
+
   function addDays(iso, count) {
     const date = dateFromIso(iso);
     date.setUTCDate(date.getUTCDate() + count);
@@ -2329,9 +2339,13 @@
   function shortMoney(value) {
     if (!Number.isFinite(value)) return "-";
     const abs = Math.abs(value);
-    if (abs >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
-    if (abs >= 1000) return `$${(value / 1000).toFixed(abs >= 10000 ? 0 : 1)}K`;
+    if (abs >= 1000000) return `$${formatCompactMagnitude(value / 1000000)}M`;
+    if (abs >= 1000) return `$${formatCompactMagnitude(value / 1000, abs >= 10000 ? 0 : 1)}K`;
     return moneyFormat.format(value);
+  }
+
+  function formatCompactMagnitude(value, digits = 1) {
+    return value.toFixed(digits).replace(/\.0$/, "");
   }
 
   function setPill(selector, text, level) {
