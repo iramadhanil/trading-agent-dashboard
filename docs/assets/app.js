@@ -1255,41 +1255,42 @@
     );
     drawChartFrame(ctx, width, height);
 
-    if (points.length < 2) {
-      drawEmptyChart(ctx, width, height, "Equity curve muncul setelah minimal 1 daily log.");
-      return;
-    }
-
-    const values = points.map((point) => point.value);
+    const rate = Math.max(0, getProjectionRate());
+    const projectionPoints = buildProjectionPreview(points[points.length - 1].value, rate, entries.length ? 10 : 16);
+    const values = points.concat(projectionPoints).map((point) => point.value);
     const min = Math.min(...values, state.settings.startingCapital) * 0.98;
     const max = Math.max(...values, state.settings.goal * 0.001, state.settings.startingCapital) * 1.04;
-    const xStep = points.length > 1 ? (width - 54) / (points.length - 1) : width - 54;
-    const mapY = (value) => height - 32 - ((value - min) / Math.max(1, max - min)) * (height - 58);
+    const totalPoints = Math.max(points.length + projectionPoints.length - 1, 2);
+    const xStep = (width - 58) / Math.max(1, totalPoints - 1);
+    const mapY = (value) => height - 34 - ((value - min) / Math.max(1, max - min)) * (height - 62);
+
+    drawProjectionArea(ctx, width, height, points.length, projectionPoints, xStep, mapY);
+
+    if (points.length < 2) {
+      drawChartLabel(ctx, width, "Projected path before first daily log", "Add your first trading day to replace this preview with actual equity.");
+    }
 
     ctx.beginPath();
     points.forEach((point, index) => {
-      const x = 38 + index * xStep;
+      const x = 40 + index * xStep;
       const y = mapY(point.value);
       if (index === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     });
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = "#12805c";
+    ctx.lineWidth = points.length < 2 ? 0 : 3.4;
+    ctx.strokeStyle = "#0b8f69";
     ctx.stroke();
 
     points.forEach((point, index) => {
-      const x = 38 + index * xStep;
+      const x = 40 + index * xStep;
       const y = mapY(point.value);
-      ctx.fillStyle = index === points.length - 1 ? "#1f67c2" : "#12805c";
+      ctx.fillStyle = index === points.length - 1 ? "#245fc7" : "#0b8f69";
       ctx.beginPath();
-      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.arc(x, y, index === points.length - 1 ? 4.6 : 3.6, 0, Math.PI * 2);
       ctx.fill();
     });
 
-    ctx.fillStyle = "#657589";
-    ctx.font = "12px Inter, system-ui, sans-serif";
-    ctx.fillText(moneyFormat.format(max / 1.04), 8, 18);
-    ctx.fillText(moneyFormat.format(min / 0.98), 8, height - 12);
+    drawAxisLabels(ctx, width, height, max / 1.04, min / 0.98);
   }
 
   function drawReturnChart() {
@@ -1300,7 +1301,7 @@
 
     const entries = state.entries.slice(-20);
     if (!entries.length) {
-      drawEmptyChart(ctx, width, height, "Daily return bars muncul setelah log pertama.");
+      drawTargetBarPreview(ctx, width, height);
       return;
     }
 
@@ -1309,7 +1310,7 @@
     const barGap = 4;
     const barWidth = Math.max(10, (width - 48) / entries.length - barGap);
 
-    ctx.strokeStyle = "#9fb0c2";
+    ctx.strokeStyle = "#9aaec1";
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(28, zeroY);
@@ -1320,7 +1321,7 @@
       const x = 30 + index * (barWidth + barGap);
       const barHeight = (Math.abs(entry.returnPct) / maxAbs) * ((height - 38) / 2);
       const y = entry.returnPct >= 0 ? zeroY - barHeight : zeroY;
-      ctx.fillStyle = entry.returnPct >= 0 ? "#12805c" : "#c43d3d";
+      ctx.fillStyle = entry.returnPct >= 0 ? "#0b8f69" : "#bd394a";
       ctx.fillRect(x, y, barWidth, Math.max(2, barHeight));
     });
   }
@@ -1339,24 +1340,105 @@
   }
 
   function drawChartFrame(ctx, width, height) {
-    ctx.fillStyle = "#fbfcfd";
+    const fill = ctx.createLinearGradient(0, 0, 0, height);
+    fill.addColorStop(0, "#fcfeff");
+    fill.addColorStop(1, "#f5f8fb");
+    ctx.fillStyle = fill;
     ctx.fillRect(0, 0, width, height);
-    ctx.strokeStyle = "#e2e9ef";
+    ctx.strokeStyle = "#e3ebf2";
     ctx.lineWidth = 1;
     for (let i = 1; i < 4; i += 1) {
       const y = (height / 4) * i;
       ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(width, y);
+      ctx.moveTo(20, y);
+      ctx.lineTo(width - 14, y);
       ctx.stroke();
     }
   }
 
-  function drawEmptyChart(ctx, width, height, message) {
-    ctx.fillStyle = "#657589";
-    ctx.font = "14px Inter, system-ui, sans-serif";
+  function buildProjectionPreview(startValue, rate, length) {
+    const points = [];
+    for (let index = 1; index <= length; index += 1) {
+      points.push({ date: `+${index}`, value: startValue * (1 + rate) ** index });
+    }
+    return points;
+  }
+
+  function drawProjectionArea(ctx, width, height, actualLength, projectionPoints, xStep, mapY) {
+    if (!projectionPoints.length) return;
+    const startX = 40 + Math.max(0, actualLength - 1) * xStep;
+    const firstY = mapY(getLatestCapital());
+    const gradient = ctx.createLinearGradient(0, 20, width, height);
+    gradient.addColorStop(0, "rgba(11, 143, 105, 0.2)");
+    gradient.addColorStop(1, "rgba(36, 95, 199, 0.03)");
+
+    ctx.beginPath();
+    ctx.moveTo(startX, firstY);
+    projectionPoints.forEach((point, index) => {
+      ctx.lineTo(40 + (actualLength + index) * xStep, mapY(point.value));
+    });
+    ctx.lineTo(40 + (actualLength + projectionPoints.length - 1) * xStep, height - 32);
+    ctx.lineTo(startX, height - 32);
+    ctx.closePath();
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(startX, firstY);
+    projectionPoints.forEach((point, index) => {
+      ctx.lineTo(40 + (actualLength + index) * xStep, mapY(point.value));
+    });
+    ctx.setLineDash([7, 7]);
+    ctx.lineWidth = 2.4;
+    ctx.strokeStyle = "#245fc7";
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  function drawTargetBarPreview(ctx, width, height) {
+    const zeroY = height * 0.62;
+    const bars = 10;
+    const gap = 7;
+    const barWidth = Math.max(12, (width - 58) / bars - gap);
+    ctx.strokeStyle = "#9aaec1";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(28, zeroY);
+    ctx.lineTo(width - 18, zeroY);
+    ctx.stroke();
+
+    for (let index = 0; index < bars; index += 1) {
+      const x = 30 + index * (barWidth + gap);
+      const heightFactor = 0.42 + index * 0.035;
+      const barHeight = (height - 46) * heightFactor;
+      const gradient = ctx.createLinearGradient(0, zeroY - barHeight, 0, zeroY);
+      gradient.addColorStop(0, "rgba(11, 143, 105, 0.74)");
+      gradient.addColorStop(1, "rgba(36, 95, 199, 0.24)");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(x, zeroY - barHeight, barWidth, barHeight);
+    }
+
+    drawChartLabel(ctx, width, "Target return preview", "Daily bars will switch to actual results after your first log.");
+  }
+
+  function drawChartLabel(ctx, width, title, subtitle) {
     ctx.textAlign = "center";
-    ctx.fillText(message, width / 2, height / 2);
+    ctx.fillStyle = "#25384f";
+    ctx.font = "700 13px Inter, system-ui, sans-serif";
+    ctx.fillText(title, width / 2, 30);
+    ctx.fillStyle = "#66758a";
+    ctx.font = "12px Inter, system-ui, sans-serif";
+    ctx.fillText(subtitle, width / 2, 49);
+    ctx.textAlign = "left";
+  }
+
+  function drawAxisLabels(ctx, width, height, max, min) {
+    ctx.fillStyle = "#66758a";
+    ctx.font = "12px Inter, system-ui, sans-serif";
+    ctx.fillText(moneyFormat.format(max), 10, 18);
+    ctx.fillText(moneyFormat.format(min), 10, height - 12);
+    ctx.textAlign = "right";
+    ctx.fillText("projected", width - 12, 18);
     ctx.textAlign = "left";
   }
 

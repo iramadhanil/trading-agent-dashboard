@@ -55,29 +55,41 @@
         <section class="tab-panel active" data-panel="overview">
           <div class="metric-grid" aria-live="polite">
             <article class="metric-card accent-green">
-              <span>Capital sekarang</span>
+              <div class="metric-top">
+                <span>Capital sekarang</span>
+                <i data-lucide="wallet"></i>
+              </div>
               <strong id="metricCapital">$640</strong>
               <small id="metricReturn">Cumulative return 0.00%</small>
             </article>
             <article class="metric-card accent-blue">
-              <span>Target $1M</span>
+              <div class="metric-top">
+                <span>Target $1M</span>
+                <i data-lucide="flag"></i>
+              </div>
               <strong id="metricEta">-</strong>
               <small id="metricEtaSub">Trading days tersisa</small>
             </article>
             <article class="metric-card accent-amber">
-              <span>Daily pace</span>
+              <div class="metric-top">
+                <span>Daily pace</span>
+                <i data-lucide="trending-up"></i>
+              </div>
               <strong id="metricPace">5.00%</strong>
               <small id="metricPaceSub">Mode target</small>
             </article>
             <article class="metric-card accent-red">
-              <span>Drawdown</span>
+              <div class="metric-top">
+                <span>Drawdown</span>
+                <i data-lucide="shield-alert"></i>
+              </div>
               <strong id="metricDrawdown">0.00%</strong>
               <small id="metricDrawdownSub">Dari equity peak</small>
             </article>
           </div>
 
           <div class="layout-two">
-            <section class="tool-panel">
+            <section class="tool-panel hero-panel">
               <div class="panel-title">
                 <div>
                   <p class="eyebrow">Projection</p>
@@ -121,7 +133,7 @@
               <canvas id="equityChart" class="chart" height="240" aria-label="Equity curve"></canvas>
             </section>
 
-            <section class="tool-panel">
+            <section class="tool-panel market-panel">
               <div class="panel-title">
                 <div>
                   <p class="eyebrow">Market clock</p>
