@@ -1,0 +1,713 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>US Trading Control Room</title>
+    <meta
+      name="description"
+      content="Personal offline-first dashboard untuk tracking performa trading US Stocks, proyeksi target, kalender bursa AS, dan manajemen psikologis."
+    />
+    <link rel="stylesheet" href="assets/styles.css" />
+    <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script defer src="assets/market-data.js"></script>
+    <script defer src="assets/app.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Personal US Stocks Performance System</p>
+          <h1>Trading Control Room</h1>
+        </div>
+        <div class="clock-stack" aria-live="polite">
+          <span id="jstClock">JST -</span>
+          <span id="etClock">ET -</span>
+        </div>
+      </header>
+
+      <nav class="tabs" aria-label="Dashboard sections">
+        <button class="tab-button active" type="button" data-tab="overview">
+          <i data-lucide="layout-dashboard"></i><span>Overview</span>
+        </button>
+        <button class="tab-button" type="button" data-tab="log">
+          <i data-lucide="notebook-pen"></i><span>Daily log</span>
+        </button>
+        <button class="tab-button" type="button" data-tab="coach">
+          <i data-lucide="shield-check"></i><span>Coach</span>
+        </button>
+        <button class="tab-button" type="button" data-tab="calendar">
+          <i data-lucide="calendar-clock"></i><span>Calendar</span>
+        </button>
+        <button class="tab-button" type="button" data-tab="risk">
+          <i data-lucide="activity"></i><span>Risk lab</span>
+        </button>
+        <button class="tab-button" type="button" data-tab="backend">
+          <i data-lucide="database"></i><span>Backend</span>
+        </button>
+        <button class="tab-button" type="button" data-tab="research">
+          <i data-lucide="book-open-check"></i><span>Research</span>
+        </button>
+      </nav>
+
+      <main>
+        <section class="tab-panel active" data-panel="overview">
+          <div class="metric-grid" aria-live="polite">
+            <article class="metric-card accent-green">
+              <span>Capital sekarang</span>
+              <strong id="metricCapital">$640</strong>
+              <small id="metricReturn">Cumulative return 0.00%</small>
+            </article>
+            <article class="metric-card accent-blue">
+              <span>Target $1M</span>
+              <strong id="metricEta">-</strong>
+              <small id="metricEtaSub">Trading days tersisa</small>
+            </article>
+            <article class="metric-card accent-amber">
+              <span>Daily pace</span>
+              <strong id="metricPace">5.00%</strong>
+              <small id="metricPaceSub">Mode target</small>
+            </article>
+            <article class="metric-card accent-red">
+              <span>Drawdown</span>
+              <strong id="metricDrawdown">0.00%</strong>
+              <small id="metricDrawdownSub">Dari equity peak</small>
+            </article>
+          </div>
+
+          <div class="layout-two">
+            <section class="tool-panel">
+              <div class="panel-title">
+                <div>
+                  <p class="eyebrow">Projection</p>
+                  <h2>Path to $1,000,000</h2>
+                </div>
+                <span class="status-pill" id="projectionModePill">Target mode</span>
+              </div>
+
+              <div class="progress-wrap">
+                <div class="progress-ring" aria-label="Progress to goal">
+                  <svg viewBox="0 0 120 120" role="img">
+                    <circle class="ring-bg" cx="60" cy="60" r="52"></circle>
+                    <circle class="ring-fg" id="goalRing" cx="60" cy="60" r="52"></circle>
+                  </svg>
+                  <div>
+                    <strong id="goalProgress">0.06%</strong>
+                    <span>of goal</span>
+                  </div>
+                </div>
+                <div class="projection-copy">
+                  <p id="projectionSummary">
+                    Masukkan performa harian untuk membuat ETA menyesuaikan pace aktual.
+                  </p>
+                  <dl class="detail-list">
+                    <div>
+                      <dt>Target date</dt>
+                      <dd id="targetDate">-</dd>
+                    </div>
+                    <div>
+                      <dt>First counted session</dt>
+                      <dd id="firstSession">-</dd>
+                    </div>
+                    <div>
+                      <dt>Next milestone</dt>
+                      <dd id="nextMilestone">-</dd>
+                    </div>
+                  </dl>
+                </div>
+              </div>
+
+              <canvas id="equityChart" class="chart" height="240" aria-label="Equity curve"></canvas>
+            </section>
+
+            <section class="tool-panel">
+              <div class="panel-title">
+                <div>
+                  <p class="eyebrow">Market clock</p>
+                  <h2>US session status</h2>
+                </div>
+                <span class="status-pill" id="marketStatusPill">Checking</span>
+              </div>
+              <div class="session-grid">
+                <div>
+                  <span>Today ET</span>
+                  <strong id="todayEt">-</strong>
+                </div>
+                <div>
+                  <span>Session</span>
+                  <strong id="sessionLabel">-</strong>
+                </div>
+                <div>
+                  <span>Next open</span>
+                  <strong id="nextOpen">-</strong>
+                </div>
+                <div>
+                  <span>Next event</span>
+                  <strong id="nextMarketEvent">-</strong>
+                </div>
+              </div>
+              <div class="coach-banner" id="overviewCoach">
+                Market context akan muncul setelah kalender dan log terbaca.
+              </div>
+              <canvas id="returnChart" class="chart compact" height="160" aria-label="Daily return bars"></canvas>
+            </section>
+          </div>
+
+          <section class="tool-panel">
+            <div class="panel-title">
+              <div>
+                <p class="eyebrow">Milestones</p>
+                <h2>Capital ladder</h2>
+              </div>
+              <span class="status-pill">Compounding model</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Milestone</th>
+                    <th>Needed</th>
+                    <th>Trading days</th>
+                    <th>ETA</th>
+                  </tr>
+                </thead>
+                <tbody id="milestoneTable"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section class="tab-panel" data-panel="log">
+          <div class="layout-two">
+            <section class="tool-panel">
+              <div class="panel-title">
+                <div>
+                  <p class="eyebrow">Daily input</p>
+                  <h2>Catat trading day</h2>
+                </div>
+                <span class="status-pill" id="entryStatus">Local only</span>
+              </div>
+
+              <form id="dailyForm" class="form-grid">
+                <label>
+                  Date
+                  <input id="entryDate" type="date" required />
+                </label>
+                <label>
+                  Start equity
+                  <input id="entryStart" type="number" min="0" step="0.01" inputmode="decimal" />
+                </label>
+                <label>
+                  End equity
+                  <input id="entryEnd" type="number" min="0" step="0.01" inputmode="decimal" />
+                </label>
+                <label>
+                  Return %
+                  <input id="entryReturn" type="number" step="0.01" inputmode="decimal" />
+                </label>
+                <label>
+                  Trades
+                  <input id="entryTrades" type="number" min="0" step="1" />
+                </label>
+                <label>
+                  Wins
+                  <input id="entryWins" type="number" min="0" step="1" />
+                </label>
+                <label>
+                  Setup grade
+                  <select id="entryGrade">
+                    <option value="A+">A+</option>
+                    <option value="A">A</option>
+                    <option value="B" selected>B</option>
+                    <option value="C">C</option>
+                    <option value="D">D</option>
+                  </select>
+                </label>
+                <label>
+                  Discipline
+                  <select id="entryDiscipline">
+                    <option value="5">5 - Clean</option>
+                    <option value="4">4 - Minor miss</option>
+                    <option value="3" selected>3 - Average</option>
+                    <option value="2">2 - Tilt risk</option>
+                    <option value="1">1 - Rule break</option>
+                  </select>
+                </label>
+                <label>
+                  Mood
+                  <select id="entryMood">
+                    <option value="calm" selected>Calm</option>
+                    <option value="confident">Confident</option>
+                    <option value="fomo">FOMO</option>
+                    <option value="revenge">Revenge impulse</option>
+                    <option value="tired">Tired</option>
+                  </select>
+                </label>
+                <label>
+                  Market regime
+                  <select id="entryRegime">
+                    <option value="trend" selected>Trend day</option>
+                    <option value="range">Range/chop</option>
+                    <option value="gap">Gap and fade</option>
+                    <option value="crash">Risk-off/crash</option>
+                    <option value="thin">Thin liquidity</option>
+                  </select>
+                </label>
+                <label class="wide">
+                  Mistake tags
+                  <input
+                    id="entryMistakes"
+                    type="text"
+                    placeholder="contoh: late entry, no stop, overtrade"
+                  />
+                </label>
+                <label class="wide">
+                  Notes
+                  <textarea id="entryNotes" rows="3" placeholder="Apa yang benar, apa yang harus dihentikan?"></textarea>
+                </label>
+                <label class="wide">
+                  Plan tomorrow
+                  <textarea id="entryPlan" rows="3" placeholder="Setup yang boleh diambil besok, dan kondisi no-trade."></textarea>
+                </label>
+                <div class="form-actions wide">
+                  <button class="primary" type="submit">
+                    <i data-lucide="save"></i><span>Save day</span>
+                  </button>
+                  <button id="useLatestStart" type="button">
+                    <i data-lucide="corner-down-right"></i><span>Use latest equity</span>
+                  </button>
+                </div>
+              </form>
+            </section>
+
+            <section class="tool-panel">
+              <div class="panel-title">
+                <div>
+                  <p class="eyebrow">Settings</p>
+                  <h2>Account plan</h2>
+                </div>
+                <span class="status-pill">Editable</span>
+              </div>
+              <form id="settingsForm" class="form-grid compact-form">
+                <label>
+                  Starting capital
+                  <input id="settingStartCapital" type="number" min="0" step="0.01" />
+                </label>
+                <label>
+                  Goal
+                  <input id="settingGoal" type="number" min="1" step="1000" />
+                </label>
+                <label>
+                  Target daily %
+                  <input id="settingDailyTarget" type="number" min="0" step="0.1" />
+                </label>
+                <label>
+                  Max daily loss %
+                  <input id="settingMaxDailyLoss" type="number" min="0" step="0.1" />
+                </label>
+                <label>
+                  Risk per trade %
+                  <input id="settingRiskTrade" type="number" min="0" step="0.1" />
+                </label>
+                <label>
+                  Max trades/day
+                  <input id="settingMaxTrades" type="number" min="1" step="1" />
+                </label>
+                <label class="wide">
+                  Projection mode
+                  <select id="settingProjectionMode">
+                    <option value="target">Target 5% plan</option>
+                    <option value="actual">Actual geometric average</option>
+                    <option value="conservative">Conservative blended pace</option>
+                  </select>
+                </label>
+                <div class="form-actions wide">
+                  <button class="primary" type="submit">
+                    <i data-lucide="settings"></i><span>Save settings</span>
+                  </button>
+                  <button id="exportJson" type="button">
+                    <i data-lucide="download"></i><span>Export JSON</span>
+                  </button>
+                  <button id="exportCsv" type="button">
+                    <i data-lucide="file-down"></i><span>Export CSV</span>
+                  </button>
+                  <button id="importJsonButton" type="button">
+                    <i data-lucide="upload"></i><span>Import JSON</span>
+                  </button>
+                  <input id="importJson" class="hidden-file" type="file" accept="application/json" />
+                </div>
+              </form>
+              <p class="privacy-note">
+                Data performa disimpan di browser ini saja. Export file sebelum clear browser data atau pindah device.
+              </p>
+            </section>
+          </div>
+
+          <section class="tool-panel">
+            <div class="panel-title">
+              <div>
+                <p class="eyebrow">History</p>
+                <h2>Trading journal</h2>
+              </div>
+              <span class="status-pill" id="journalCount">0 entries</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>Return</th>
+                    <th>Trades</th>
+                    <th>Grade</th>
+                    <th>Discipline</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="journalTable"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section class="tab-panel" data-panel="coach">
+          <div class="layout-two">
+            <section class="tool-panel">
+              <div class="panel-title">
+                <div>
+                  <p class="eyebrow">Psychology</p>
+                  <h2>State manager</h2>
+                </div>
+                <span class="status-pill" id="coachRiskPill">Normal</span>
+              </div>
+              <div class="form-grid compact-form">
+                <label>
+                  Current state
+                  <select id="coachState">
+                    <option value="calm" selected>Calm and focused</option>
+                    <option value="euphoric">Euphoric after win</option>
+                    <option value="fomo">FOMO</option>
+                    <option value="revenge">Revenge impulse</option>
+                    <option value="drawdown">Drawdown pain</option>
+                    <option value="tired">Low energy</option>
+                  </select>
+                </label>
+                <label>
+                  Market stress
+                  <select id="coachMarket">
+                    <option value="normal" selected>Normal</option>
+                    <option value="thin">Thin liquidity</option>
+                    <option value="chop">Choppy tape</option>
+                    <option value="gapdown">Gap-down risk-off</option>
+                    <option value="circuit">Circuit-breaker risk</option>
+                  </select>
+                </label>
+              </div>
+              <div class="coach-card" id="coachCard"></div>
+            </section>
+
+            <section class="tool-panel">
+              <div class="panel-title">
+                <div>
+                  <p class="eyebrow">Execution rules</p>
+                  <h2>Today checklist</h2>
+                </div>
+                <span class="status-pill">Manual discipline</span>
+              </div>
+              <div class="checklist" id="executionChecklist"></div>
+            </section>
+          </div>
+
+          <section class="tool-panel">
+            <div class="panel-title">
+              <div>
+                <p class="eyebrow">Scenario planning</p>
+                <h2>Drawdown protocol</h2>
+              </div>
+              <span class="status-pill">Capital defense</span>
+            </div>
+            <div class="scenario-grid" id="scenarioGrid"></div>
+          </section>
+        </section>
+
+        <section class="tab-panel" data-panel="calendar">
+          <div class="layout-two">
+            <section class="tool-panel">
+              <div class="panel-title">
+                <div>
+                  <p class="eyebrow">NYSE/Nasdaq</p>
+                  <h2>Upcoming sessions</h2>
+                </div>
+                <span class="status-pill">ET calendar</span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Status</th>
+                      <th>Note</th>
+                    </tr>
+                  </thead>
+                  <tbody id="sessionTable"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="tool-panel">
+              <div class="panel-title">
+                <div>
+                  <p class="eyebrow">Overrides</p>
+                  <h2>Manual closure</h2>
+                </div>
+                <span class="status-pill">For emergency halt</span>
+              </div>
+              <form id="closureForm" class="form-grid compact-form">
+                <label>
+                  Date
+                  <input id="closureDate" type="date" />
+                </label>
+                <label>
+                  Type
+                  <select id="closureType">
+                    <option value="closed">Closed</option>
+                    <option value="early">Early close</option>
+                  </select>
+                </label>
+                <label class="wide">
+                  Label
+                  <input id="closureLabel" type="text" placeholder="contoh: unscheduled closure" />
+                </label>
+                <div class="form-actions wide">
+                  <button class="primary" type="submit">
+                    <i data-lucide="plus"></i><span>Add override</span>
+                  </button>
+                </div>
+              </form>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Type</th>
+                      <th>Label</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="closureTable"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="tab-panel" data-panel="risk">
+          <div class="layout-two">
+            <section class="tool-panel">
+              <div class="panel-title">
+                <div>
+                  <p class="eyebrow">Risk engine</p>
+                  <h2>Monte Carlo survival test</h2>
+                </div>
+                <span class="status-pill" id="riskResultPill">Not run</span>
+              </div>
+              <form id="riskForm" class="form-grid compact-form">
+                <label>
+                  Win rate %
+                  <input id="riskWinRate" type="number" min="0" max="100" step="1" value="55" />
+                </label>
+                <label>
+                  Avg win / trade %
+                  <input id="riskAvgWin" type="number" min="0" step="0.1" value="2.2" />
+                </label>
+                <label>
+                  Avg loss / trade %
+                  <input id="riskAvgLoss" type="number" min="0" step="0.1" value="1.2" />
+                </label>
+                <label>
+                  Trades / day
+                  <input id="riskTradesPerDay" type="number" min="1" max="20" step="1" value="3" />
+                </label>
+                <label>
+                  Max drawdown stop %
+                  <input id="riskMaxDrawdown" type="number" min="1" max="90" step="1" value="20" />
+                </label>
+                <label>
+                  Simulated paths
+                  <input id="riskPaths" type="number" min="100" max="3000" step="100" value="1000" />
+                </label>
+                <div class="form-actions wide">
+                  <button class="primary" id="runRiskSimulation" type="button">
+                    <i data-lucide="play"></i><span>Run simulation</span>
+                  </button>
+                </div>
+              </form>
+              <div class="scenario-grid risk-output" id="riskOutput"></div>
+            </section>
+
+            <section class="tool-panel">
+              <div class="panel-title">
+                <div>
+                  <p class="eyebrow">Session planner</p>
+                  <h2>Daily permission check</h2>
+                </div>
+                <span class="status-pill" id="permissionPill">Review</span>
+              </div>
+              <form id="permissionForm" class="form-grid compact-form">
+                <label>
+                  Energy
+                  <select id="permEnergy">
+                    <option value="2">Low</option>
+                    <option value="3" selected>Normal</option>
+                    <option value="4">Good</option>
+                    <option value="5">Excellent</option>
+                  </select>
+                </label>
+                <label>
+                  Market quality
+                  <select id="permMarket">
+                    <option value="1">Crash / disorderly</option>
+                    <option value="2">Thin / choppy</option>
+                    <option value="3" selected>Mixed</option>
+                    <option value="4">Clean trend</option>
+                    <option value="5">High-quality momentum</option>
+                  </select>
+                </label>
+                <label>
+                  Catalyst quality
+                  <select id="permCatalyst">
+                    <option value="1">Weak / social hype</option>
+                    <option value="2">Unclear</option>
+                    <option value="3" selected>Decent</option>
+                    <option value="4">Strong news</option>
+                    <option value="5">Exceptional fresh catalyst</option>
+                  </select>
+                </label>
+                <label>
+                  Discipline yesterday
+                  <select id="permDiscipline">
+                    <option value="1">Rule break</option>
+                    <option value="2">Tilt risk</option>
+                    <option value="3" selected>Average</option>
+                    <option value="4">Clean</option>
+                    <option value="5">Excellent</option>
+                  </select>
+                </label>
+              </form>
+              <div class="coach-card" id="permissionCard"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="tab-panel" data-panel="backend">
+          <div class="layout-two">
+            <section class="tool-panel">
+              <div class="panel-title">
+                <div>
+                  <p class="eyebrow">Supabase backend</p>
+                  <h2>Cloud sync</h2>
+                </div>
+                <span class="status-pill" id="backendStatusPill">Offline local</span>
+              </div>
+              <form id="backendForm" class="form-grid compact-form">
+                <label class="wide">
+                  Supabase project URL
+                  <input id="backendUrl" type="url" placeholder="https://project-ref.supabase.co" autocomplete="off" />
+                </label>
+                <label class="wide">
+                  Supabase publishable / anon key
+                  <input id="backendAnonKey" type="password" autocomplete="off" />
+                </label>
+                <label>
+                  Email login
+                  <input id="backendEmail" type="email" placeholder="you@example.com" autocomplete="email" />
+                </label>
+                <label>
+                  Auto sync
+                  <select id="backendAutoSync">
+                    <option value="off">Off</option>
+                    <option value="on">On after save</option>
+                  </select>
+                </label>
+                <div class="form-actions wide">
+                  <button class="primary" type="submit">
+                    <i data-lucide="save"></i><span>Save backend config</span>
+                  </button>
+                  <button id="backendSendOtp" type="button">
+                    <i data-lucide="mail"></i><span>Send login link</span>
+                  </button>
+                  <button id="backendSignOut" type="button">
+                    <i data-lucide="log-out"></i><span>Sign out</span>
+                  </button>
+                </div>
+              </form>
+              <p class="privacy-note">
+                Backend config disimpan di browser ini saja. Public anon key memang aman dipakai di frontend jika RLS aktif.
+              </p>
+            </section>
+
+            <section class="tool-panel">
+              <div class="panel-title">
+                <div>
+                  <p class="eyebrow">Sync controls</p>
+                  <h2>Backup and restore</h2>
+                </div>
+                <span class="status-pill" id="backendUserPill">Not signed in</span>
+              </div>
+              <div class="session-grid">
+                <div>
+                  <span>Last sync</span>
+                  <strong id="backendLastSync">Never</strong>
+                </div>
+                <div>
+                  <span>Remote status</span>
+                  <strong id="backendRemoteStatus">Unknown</strong>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button id="backendPush" type="button">
+                  <i data-lucide="cloud-upload"></i><span>Push local</span>
+                </button>
+                <button id="backendPull" type="button">
+                  <i data-lucide="cloud-download"></i><span>Pull remote</span>
+                </button>
+                <button id="backendMerge" type="button">
+                  <i data-lucide="merge"></i><span>Merge</span>
+                </button>
+              </div>
+              <div class="coach-banner" id="backendMessage">
+                Supabase sync akan aktif setelah schema migration diterapkan dan Anda login via magic link.
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="tab-panel" data-panel="research">
+          <section class="tool-panel">
+            <div class="panel-title">
+              <div>
+                <p class="eyebrow">Market character</p>
+                <h2>US market playbook</h2>
+              </div>
+              <span class="status-pill">Evidence based</span>
+            </div>
+            <div class="research-grid" id="researchNotes"></div>
+          </section>
+
+          <section class="tool-panel">
+            <div class="panel-title">
+              <div>
+                <p class="eyebrow">Sources</p>
+                <h2>Reference links</h2>
+              </div>
+              <span class="status-pill" id="sourceUpdated">Updated 2026-05-23</span>
+            </div>
+            <div class="source-list" id="sourceList"></div>
+          </section>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
