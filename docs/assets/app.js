@@ -29,6 +29,7 @@
   let backendConfig = loadBackendConfig();
   let renderTimer = null;
   let autoSyncTimer = null;
+  const chartInstances = new Map();
 
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => Array.from(document.querySelectorAll(selector));
@@ -60,7 +61,10 @@
     window.setInterval(() => renderClocksAndMarket(), 1000);
     window.addEventListener("resize", () => {
       window.clearTimeout(renderTimer);
-      renderTimer = window.setTimeout(renderCharts, 120);
+      renderTimer = window.setTimeout(() => {
+        chartInstances.forEach((chart) => chart.resize());
+        renderCharts();
+      }, 120);
     });
   }
 
@@ -644,19 +648,34 @@
     const actions = buildCoachActions(selectedState, selectedMarket, latest, drawdown, lossStreak);
     $("#coachCard").className = `coach-card ${cardClass}`;
     $("#coachCard").innerHTML = `
-      <div>
-        <h3>${escapeHtml(actions.title)}</h3>
-        <p>${escapeHtml(actions.summary)}</p>
+      <div class="coach-head">
+        <div>
+          <span class="coach-kicker">Psychology protocol</span>
+          <h3>${escapeHtml(actions.title)}</h3>
+          <p>${escapeHtml(actions.summary)}</p>
+        </div>
+        <div class="coach-state-stack" aria-label="Current trading state">
+          <span>${escapeHtml(pillText)}</span>
+          <strong>${escapeHtml(selectedState.replace("-", " "))}</strong>
+        </div>
       </div>
-      <div>
-        <strong>Do now</strong>
-        <ul>${actions.doNow.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+      <div class="coach-metrics">
+        <span><strong>${formatPercent(drawdown.current * 100)}</strong> drawdown</span>
+        <span><strong>${lossStreak}</strong> loss streak</span>
+        <span><strong>${latest ? formatPercent(latest.returnPct) : "0.00%"}</strong> latest day</span>
       </div>
-      <div>
-        <strong>Do not</strong>
-        <ul>${actions.doNot.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+      <div class="coach-action-grid">
+        <section class="coach-action do">
+          <span class="coach-label"><i data-lucide="check-circle-2"></i>Do now</span>
+          ${actions.doNow.map((item) => `<div class="coach-chip"><i data-lucide="arrow-right"></i><span>${escapeHtml(item)}</span></div>`).join("")}
+        </section>
+        <section class="coach-action dont">
+          <span class="coach-label"><i data-lucide="ban"></i>Do not</span>
+          ${actions.doNot.map((item) => `<div class="coach-chip"><i data-lucide="octagon-x"></i><span>${escapeHtml(item)}</span></div>`).join("")}
+        </section>
       </div>
     `;
+    refreshIcons();
 
     renderChecklist(warning, highRisk);
     renderScenarios();
@@ -1266,48 +1285,170 @@
     drawReturnChart();
   }
 
+  function renderEChart(element, option) {
+    if (!window.echarts) {
+      element.classList.add("chart-fallback");
+      element.textContent = "Chart engine loading...";
+      return;
+    }
+    element.classList.remove("chart-fallback");
+    element.textContent = "";
+    let chart = chartInstances.get(element.id);
+    if (!chart) {
+      chart = window.echarts.init(element, null, { renderer: "canvas" });
+      chartInstances.set(element.id, chart);
+    }
+    chart.setOption(option, true);
+    chart.resize();
+  }
+
+  function chartGradient(x0, y0, x1, y1, stops) {
+    if (!window.echarts?.graphic?.LinearGradient) return stops[stops.length - 1]?.color || "#0b8f69";
+    return new window.echarts.graphic.LinearGradient(x0, y0, x1, y1, stops);
+  }
+
   function drawPortfolioDonutChart() {
-    const canvas = $("#portfolioDonutChart");
-    if (!canvas) return;
-    const { ctx, width, height } = prepCanvas(canvas);
+    const element = $("#portfolioDonutChart");
+    if (!element) return;
     const current = getLatestCapital();
     const progress = clamp(current / state.settings.goal, 0, 1);
-    drawDonut(ctx, width, height, [
-      { value: progress, color: "#14b889" },
-      { value: Math.max(0, 1 - progress), color: "rgba(255, 255, 255, 0.16)" }
-    ], {
-      title: formatPercent(progress * 100),
-      subtitle: "to $1M",
-      textColor: "#ffffff",
-      subColor: "#a8c7c1"
+    renderEChart(element, {
+      backgroundColor: "transparent",
+      tooltip: {
+        trigger: "item",
+        formatter: "{b}: {d}%",
+        backgroundColor: "rgba(10, 18, 30, 0.92)",
+        borderWidth: 0,
+        textStyle: { color: "#f8fbff", fontFamily: "Plus Jakarta Sans" }
+      },
+      graphic: [
+        {
+          type: "text",
+          left: "center",
+          top: "42%",
+          style: {
+            text: formatPercent(progress * 100),
+            fill: "#ffffff",
+            fontFamily: "IBM Plex Mono",
+            fontSize: 26,
+            fontWeight: 800,
+            textAlign: "center"
+          }
+        },
+        {
+          type: "text",
+          left: "center",
+          top: "56%",
+          style: {
+            text: "TARGET PROGRESS",
+            fill: "#9fc6bf",
+            fontFamily: "Plus Jakarta Sans",
+            fontSize: 11,
+            fontWeight: 800,
+            textAlign: "center"
+          }
+        }
+      ],
+      series: [
+        {
+          name: "Goal exposure",
+          type: "pie",
+          radius: ["66%", "82%"],
+          center: ["50%", "52%"],
+          avoidLabelOverlap: true,
+          silent: false,
+          label: { show: false },
+          labelLine: { show: false },
+          itemStyle: { borderWidth: 0, borderRadius: 10 },
+          data: [
+            {
+              value: Math.max(progress, 0.001),
+              name: "Reached",
+              itemStyle: {
+                color: chartGradient(0, 0, 1, 1, [
+                  { offset: 0, color: "#4df0b7" },
+                  { offset: 1, color: "#0b8f69" }
+                ])
+              }
+            },
+            { value: Math.max(0, 1 - progress), name: "Remaining", itemStyle: { color: "rgba(255,255,255,0.15)" } }
+          ]
+        }
+      ]
     });
   }
 
   function drawRiskDonutChart() {
-    const canvas = $("#riskDonutChart");
-    if (!canvas) return;
-    const { ctx, width, height } = prepCanvas(canvas);
+    const element = $("#riskDonutChart");
+    if (!element) return;
     const dailyStop = Math.max(0.01, state.settings.maxDailyLoss);
     const perTrade = Math.max(0.01, state.settings.riskPerTrade);
     const remaining = Math.max(0.01, 100 - dailyStop - perTrade * state.settings.maxTradesPerDay);
-    drawDonut(ctx, width, height, [
-      { value: dailyStop, color: "#bd394a" },
-      { value: perTrade * state.settings.maxTradesPerDay, color: "#b56a00" },
-      { value: remaining, color: "#d9e3ec" }
-    ], {
-      title: formatPercent(dailyStop),
-      subtitle: "daily stop",
-      textColor: "#132033",
-      subColor: "#66758a"
+    renderEChart(element, {
+      backgroundColor: "transparent",
+      tooltip: {
+        trigger: "item",
+        formatter: (params) => `${params.name}<br><strong>${formatPercent(params.value)}</strong>`,
+        backgroundColor: "rgba(17, 28, 45, 0.94)",
+        borderWidth: 0,
+        textStyle: { color: "#f8fbff", fontFamily: "Plus Jakarta Sans" }
+      },
+      legend: {
+        bottom: 0,
+        icon: "roundRect",
+        itemWidth: 10,
+        itemHeight: 10,
+        textStyle: { color: "#66758a", fontFamily: "Plus Jakarta Sans", fontWeight: 700, fontSize: 11 }
+      },
+      graphic: [
+        {
+          type: "text",
+          left: "center",
+          top: "38%",
+          style: {
+            text: formatPercent(dailyStop),
+            fill: "#132033",
+            fontFamily: "IBM Plex Mono",
+            fontSize: 22,
+            fontWeight: 800,
+            textAlign: "center"
+          }
+        },
+        {
+          type: "text",
+          left: "center",
+          top: "52%",
+          style: {
+            text: "DAILY STOP",
+            fill: "#66758a",
+            fontFamily: "Plus Jakarta Sans",
+            fontSize: 10,
+            fontWeight: 800,
+            textAlign: "center"
+          }
+        }
+      ],
+      series: [
+        {
+          type: "pie",
+          radius: ["60%", "78%"],
+          center: ["50%", "45%"],
+          label: { show: false },
+          labelLine: { show: false },
+          itemStyle: { borderRadius: 8, borderColor: "#ffffff", borderWidth: 2 },
+          data: [
+            { value: dailyStop, name: "Daily stop", itemStyle: { color: "#bd394a" } },
+            { value: perTrade * state.settings.maxTradesPerDay, name: "Trade risk", itemStyle: { color: "#b56a00" } },
+            { value: remaining, name: "Reserve", itemStyle: { color: "#d9e3ec" } }
+          ]
+        }
+      ]
     });
   }
 
   function drawRunwayChart() {
-    const canvas = $("#runwayChart");
-    if (!canvas) return;
-    const { ctx, width, height } = prepCanvas(canvas);
-    drawChartFrame(ctx, width, height);
-
+    const element = $("#runwayChart");
+    if (!element) return;
     const projection = getProjection();
     const current = getLatestCapital();
     const days = Number.isFinite(projection.days) ? Math.min(projection.days, 180) : 90;
@@ -1321,64 +1462,86 @@
     if (points[points.length - 1].day !== days) {
       points.push({ day: days, value: current * (1 + projection.rate) ** days });
     }
-
-    const milestones = [1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000]
-      .filter((value) => value >= current && value <= Math.max(state.settings.goal, points[points.length - 1].value));
-    const values = points.map((point) => point.value).concat(milestones);
-    const min = Math.min(...values, current) * 0.96;
-    const max = Math.max(...values, current * 1.1) * 1.04;
-    const mapX = (day) => 42 + (day / Math.max(1, days)) * (width - 68);
-    const mapY = (value) => height - 34 - ((value - min) / Math.max(1, max - min)) * (height - 68);
-
-    const area = ctx.createLinearGradient(0, 36, 0, height - 24);
-    area.addColorStop(0, "rgba(11, 143, 105, 0.22)");
-    area.addColorStop(1, "rgba(36, 95, 199, 0.02)");
-    ctx.beginPath();
-    points.forEach((point, index) => {
-      const x = mapX(point.day);
-      const y = mapY(point.value);
-      if (index === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.lineTo(mapX(days), height - 32);
-    ctx.lineTo(mapX(0), height - 32);
-    ctx.closePath();
-    ctx.fillStyle = area;
-    ctx.fill();
-
-    ctx.beginPath();
-    points.forEach((point, index) => {
-      const x = mapX(point.day);
-      const y = mapY(point.value);
-      if (index === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = "#0b8f69";
-    ctx.stroke();
-
-    milestones.slice(0, 6).forEach((milestone) => {
+    const milestones = [1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000].flatMap((milestone) => {
       const neededDays = daysToReach(current, milestone, projection.rate);
-      if (!Number.isFinite(neededDays) || neededDays > days) return;
-      const x = mapX(neededDays);
-      const y = mapY(milestone);
-      ctx.fillStyle = "#245fc7";
-      ctx.beginPath();
-      ctx.arc(x, y, 4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "#66758a";
-      ctx.font = "11px 'Plus Jakarta Sans', system-ui, sans-serif";
-      ctx.fillText(shortMoney(milestone), x + 7, y - 7);
+      if (!Number.isFinite(neededDays) || neededDays > days || milestone < current) return [];
+      return [[neededDays, milestone, shortMoney(milestone)]];
     });
-
-    ctx.fillStyle = "#25384f";
-    ctx.font = "700 12px 'Plus Jakarta Sans', system-ui, sans-serif";
-    ctx.fillText(`${integerFormat.format(days)} session view`, 14, 22);
-    ctx.textAlign = "right";
-    ctx.fillStyle = "#66758a";
-    ctx.fillText(shortMoney(max / 1.04), width - 14, 22);
-    ctx.fillText(shortMoney(min / 0.96), width - 14, height - 12);
-    ctx.textAlign = "left";
+    renderEChart(element, {
+      backgroundColor: "transparent",
+      animationDuration: 800,
+      tooltip: {
+        trigger: "axis",
+        backgroundColor: "rgba(17, 28, 45, 0.94)",
+        borderWidth: 0,
+        textStyle: { color: "#f8fbff", fontFamily: "Plus Jakarta Sans" },
+        valueFormatter: (value) => moneyFormat.format(value)
+      },
+      grid: { left: 64, right: 28, top: 30, bottom: 42 },
+      xAxis: {
+        type: "value",
+        name: "sessions",
+        nameGap: 22,
+        min: 0,
+        max: days,
+        axisLine: { lineStyle: { color: "#c4d0dd" } },
+        axisTick: { show: false },
+        splitLine: { lineStyle: { color: "rgba(151, 167, 185, 0.16)" } },
+        axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: 11 }
+      },
+      yAxis: {
+        type: "log",
+        logBase: 10,
+        scale: true,
+        axisLine: { show: false },
+        axisTick: { show: false },
+        splitLine: { lineStyle: { color: "rgba(151, 167, 185, 0.18)" } },
+        axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: 11, formatter: shortMoney }
+      },
+      series: [
+        {
+          name: "Projected equity",
+          type: "line",
+          smooth: 0.42,
+          showSymbol: false,
+          symbolSize: 7,
+          data: points.map((point) => [point.day, point.value]),
+          lineStyle: {
+            width: 4,
+            color: chartGradient(0, 0, 1, 0, [
+              { offset: 0, color: "#245fc7" },
+              { offset: 0.55, color: "#0b8f69" },
+              { offset: 1, color: "#46d79f" }
+            ]),
+            shadowBlur: 14,
+            shadowColor: "rgba(11, 143, 105, 0.28)"
+          },
+          areaStyle: {
+            color: chartGradient(0, 0, 0, 1, [
+              { offset: 0, color: "rgba(11, 143, 105, 0.3)" },
+              { offset: 1, color: "rgba(36, 95, 199, 0.02)" }
+            ])
+          }
+        },
+        {
+          name: "Milestone",
+          type: "scatter",
+          symbolSize: 10,
+          data: milestones,
+          encode: { x: 0, y: 1 },
+          itemStyle: { color: "#245fc7", borderColor: "#ffffff", borderWidth: 2 },
+          label: {
+            show: true,
+            formatter: (params) => params.value[2],
+            position: "top",
+            color: "#53657b",
+            fontSize: 11,
+            fontWeight: 800,
+            fontFamily: "Plus Jakarta Sans"
+          }
+        }
+      ]
+    });
   }
 
   function renderActivityHeatmap() {
@@ -1408,83 +1571,173 @@
   }
 
   function drawEquityChart() {
-    const canvas = $("#equityChart");
-    if (!canvas) return;
-    const { ctx, width, height } = prepCanvas(canvas);
+    const element = $("#equityChart");
+    if (!element) return;
     const entries = state.entries;
-    const points = [{ date: "Start", value: state.settings.startingCapital }].concat(
-      entries.map((entry) => ({ date: entry.date.slice(5), value: entry.end }))
+    const actualPoints = [{ label: "Start", value: state.settings.startingCapital }].concat(
+      entries.map((entry) => ({ label: entry.date.slice(5), value: entry.end }))
     );
-    drawChartFrame(ctx, width, height);
-
     const rate = Math.max(0, getProjectionRate());
-    const projectionPoints = buildProjectionPreview(points[points.length - 1].value, rate, entries.length ? 10 : 16);
-    const values = points.concat(projectionPoints).map((point) => point.value);
-    const min = Math.min(...values, state.settings.startingCapital) * 0.98;
-    const max = Math.max(...values, state.settings.goal * 0.001, state.settings.startingCapital) * 1.04;
-    const totalPoints = Math.max(points.length + projectionPoints.length - 1, 2);
-    const xStep = (width - 58) / Math.max(1, totalPoints - 1);
-    const mapY = (value) => height - 34 - ((value - min) / Math.max(1, max - min)) * (height - 62);
+    const previewLength = entries.length ? 12 : 18;
+    const projectionPoints = buildProjectionPreview(actualPoints[actualPoints.length - 1].value, rate, previewLength).map((point) => ({
+      label: point.date,
+      value: point.value
+    }));
+    const categories = actualPoints.map((point) => point.label).concat(projectionPoints.map((point) => point.label));
+    const projectionSeries = new Array(Math.max(0, actualPoints.length - 1)).fill(null).concat([
+      actualPoints[actualPoints.length - 1].value,
+      ...projectionPoints.map((point) => point.value)
+    ]);
+    const actualSeries = actualPoints.map((point) => point.value).concat(new Array(projectionPoints.length).fill(null));
 
-    drawProjectionArea(ctx, width, height, points.length, projectionPoints, xStep, mapY);
-
-    if (points.length < 2) {
-      drawChartLabel(ctx, width, "Projected path before first daily log", "Add your first trading day to replace this preview with actual equity.");
-    }
-
-    ctx.beginPath();
-    points.forEach((point, index) => {
-      const x = 40 + index * xStep;
-      const y = mapY(point.value);
-      if (index === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+    renderEChart(element, {
+      backgroundColor: "transparent",
+      animationDuration: 850,
+      title: entries.length
+        ? undefined
+        : {
+            text: "Projected path before first daily log",
+            subtext: "Add your first trading day to replace this preview with actual equity.",
+            left: "center",
+            top: 18,
+            textStyle: { color: "#25384f", fontFamily: "Plus Jakarta Sans", fontSize: 13, fontWeight: 850 },
+            subtextStyle: { color: "#7a899d", fontFamily: "Plus Jakarta Sans", fontSize: 12, fontWeight: 650 }
+          },
+      tooltip: {
+        trigger: "axis",
+        backgroundColor: "rgba(17, 28, 45, 0.94)",
+        borderWidth: 0,
+        textStyle: { color: "#f8fbff", fontFamily: "Plus Jakarta Sans" },
+        valueFormatter: (value) => (value == null ? "-" : moneyFormat.format(value))
+      },
+      legend: {
+        top: 10,
+        right: 14,
+        itemWidth: 18,
+        itemHeight: 8,
+        textStyle: { color: "#66758a", fontFamily: "Plus Jakarta Sans", fontWeight: 760 }
+      },
+      grid: { left: 62, right: 28, top: entries.length ? 42 : 68, bottom: 42 },
+      xAxis: {
+        type: "category",
+        boundaryGap: false,
+        data: categories,
+        axisLine: { lineStyle: { color: "#c4d0dd" } },
+        axisTick: { show: false },
+        axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: 11, interval: "auto" }
+      },
+      yAxis: {
+        type: "value",
+        scale: true,
+        axisLine: { show: false },
+        axisTick: { show: false },
+        splitLine: { lineStyle: { color: "rgba(151, 167, 185, 0.2)" } },
+        axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: 11, formatter: shortMoney }
+      },
+      series: [
+        {
+          name: "Actual equity",
+          type: "line",
+          smooth: 0.35,
+          symbol: "circle",
+          symbolSize: 7,
+          connectNulls: false,
+          data: actualSeries,
+          lineStyle: { width: 3.4, color: "#0b8f69", shadowBlur: 10, shadowColor: "rgba(11, 143, 105, 0.24)" },
+          itemStyle: { color: "#0b8f69", borderColor: "#ffffff", borderWidth: 2 }
+        },
+        {
+          name: "Projected path",
+          type: "line",
+          smooth: 0.42,
+          symbol: "none",
+          connectNulls: true,
+          data: projectionSeries,
+          lineStyle: { width: 3, type: "dashed", color: "#245fc7" },
+          areaStyle: {
+            color: chartGradient(0, 0, 0, 1, [
+              { offset: 0, color: "rgba(36, 95, 199, 0.22)" },
+              { offset: 1, color: "rgba(11, 143, 105, 0.03)" }
+            ])
+          }
+        }
+      ]
     });
-    ctx.lineWidth = points.length < 2 ? 0 : 3.4;
-    ctx.strokeStyle = "#0b8f69";
-    ctx.stroke();
-
-    points.forEach((point, index) => {
-      const x = 40 + index * xStep;
-      const y = mapY(point.value);
-      ctx.fillStyle = index === points.length - 1 ? "#245fc7" : "#0b8f69";
-      ctx.beginPath();
-      ctx.arc(x, y, index === points.length - 1 ? 4.6 : 3.6, 0, Math.PI * 2);
-      ctx.fill();
-    });
-
-    drawAxisLabels(ctx, width, height, max / 1.04, min / 0.98);
   }
 
   function drawReturnChart() {
-    const canvas = $("#returnChart");
-    if (!canvas) return;
-    const { ctx, width, height } = prepCanvas(canvas);
-    drawChartFrame(ctx, width, height);
-
+    const element = $("#returnChart");
+    if (!element) return;
     const entries = state.entries.slice(-20);
-    if (!entries.length) {
-      drawTargetBarPreview(ctx, width, height);
-      return;
-    }
+    const categories = entries.length ? entries.map((entry) => entry.date.slice(5)) : Array.from({ length: 10 }, (_, index) => `T+${index + 1}`);
+    const values = entries.length
+      ? entries.map((entry) => roundTo(entry.returnPct, 2))
+      : categories.map((_, index) => roundTo(state.settings.targetDailyReturn * (0.72 + index * 0.045), 2));
+    const preview = !entries.length;
 
-    const maxAbs = Math.max(1, ...entries.map((entry) => Math.abs(entry.returnPct)));
-    const zeroY = height / 2;
-    const barGap = 4;
-    const barWidth = Math.max(10, (width - 48) / entries.length - barGap);
-
-    ctx.strokeStyle = "#9aaec1";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(28, zeroY);
-    ctx.lineTo(width - 14, zeroY);
-    ctx.stroke();
-
-    entries.forEach((entry, index) => {
-      const x = 30 + index * (barWidth + barGap);
-      const barHeight = (Math.abs(entry.returnPct) / maxAbs) * ((height - 38) / 2);
-      const y = entry.returnPct >= 0 ? zeroY - barHeight : zeroY;
-      ctx.fillStyle = entry.returnPct >= 0 ? "#0b8f69" : "#bd394a";
-      ctx.fillRect(x, y, barWidth, Math.max(2, barHeight));
+    renderEChart(element, {
+      backgroundColor: "transparent",
+      animationDuration: 750,
+      title: preview
+        ? {
+            text: "Target return preview",
+            subtext: "Daily bars switch to actual results after your first log.",
+            left: "center",
+            top: 10,
+            textStyle: { color: "#25384f", fontFamily: "Plus Jakarta Sans", fontSize: 12, fontWeight: 850 },
+            subtextStyle: { color: "#7a899d", fontFamily: "Plus Jakarta Sans", fontSize: 11, fontWeight: 650 }
+          }
+        : undefined,
+      tooltip: {
+        trigger: "axis",
+        backgroundColor: "rgba(17, 28, 45, 0.94)",
+        borderWidth: 0,
+        textStyle: { color: "#f8fbff", fontFamily: "Plus Jakarta Sans" },
+        valueFormatter: (value) => formatPercent(value)
+      },
+      grid: { left: 42, right: 18, top: preview ? 58 : 18, bottom: 32 },
+      xAxis: {
+        type: "category",
+        data: categories,
+        axisLine: { lineStyle: { color: "#c4d0dd" } },
+        axisTick: { show: false },
+        axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: 10, interval: 0 }
+      },
+      yAxis: {
+        type: "value",
+        min: preview ? 0 : (range) => Math.min(0, Math.floor(range.min)),
+        max: (range) => Math.max(preview ? state.settings.targetDailyReturn * 1.35 : 1, Math.ceil(range.max)),
+        axisLine: { show: false },
+        axisTick: { show: false },
+        splitLine: { lineStyle: { color: "rgba(151, 167, 185, 0.18)" } },
+        axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: 10, formatter: (value) => `${value}%` }
+      },
+      series: [
+        {
+          name: preview ? "Target return" : "Daily return",
+          type: "bar",
+          barMaxWidth: 34,
+          data: values.map((value) => ({
+            value,
+            itemStyle: {
+              borderRadius: value >= 0 ? [7, 7, 2, 2] : [2, 2, 7, 7],
+              color: preview
+                ? chartGradient(0, 0, 0, 1, [
+                    { offset: 0, color: "#4df0b7" },
+                    { offset: 1, color: "#7fb1e6" }
+                  ])
+                : value >= 0
+                  ? "#0b8f69"
+                  : "#bd394a"
+            }
+          })),
+          markLine: {
+            symbol: "none",
+            lineStyle: { color: "rgba(102, 117, 138, 0.45)", width: 1 },
+            data: [{ yAxis: 0 }]
+          }
+        }
+      ]
     });
   }
 

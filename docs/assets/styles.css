@@ -46,6 +46,8 @@ body {
     "Plus Jakarta Sans", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 15px;
   line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
 }
 
 body::before {
@@ -167,8 +169,8 @@ p {
 h1 {
   margin-bottom: 0;
   color: #f8fbff;
-  font-size: 42px;
-  font-weight: 800;
+  font-size: 44px;
+  font-weight: 850;
   line-height: 1.02;
 }
 
@@ -218,14 +220,16 @@ h3 {
   gap: 8px;
   padding: 10px 0 16px;
   overflow-x: auto;
-  background: rgba(238, 243, 246, 0.82);
-  backdrop-filter: blur(16px);
+  background:
+    linear-gradient(180deg, rgba(238, 243, 246, 0.96), rgba(238, 243, 246, 0.78));
+  backdrop-filter: blur(18px);
 }
 
 .tab-button {
   min-width: 128px;
   border-color: rgba(193, 206, 220, 0.85);
-  background: rgba(255, 255, 255, 0.78);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 251, 253, 0.86));
   color: #42546b;
   font-weight: 740;
 }
@@ -346,10 +350,13 @@ main {
   border: 1px solid rgba(193, 206, 220, 0.9);
   border-radius: var(--radius);
   padding: 18px;
+  overflow: hidden;
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(246, 249, 252, 0.9)),
-    repeating-linear-gradient(90deg, rgba(36, 95, 199, 0.035) 0 1px, transparent 1px 18px);
-  box-shadow: var(--shadow-soft);
+    linear-gradient(150deg, rgba(255, 255, 255, 0.98), rgba(247, 250, 252, 0.9) 58%, rgba(229, 238, 252, 0.54)),
+    repeating-linear-gradient(90deg, rgba(36, 95, 199, 0.026) 0 1px, transparent 1px 22px);
+  box-shadow:
+    0 16px 40px rgba(28, 44, 64, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
 }
 
 .visual-card-dark {
@@ -382,27 +389,54 @@ main {
 
 .donut-layout {
   display: grid;
-  grid-template-columns: minmax(150px, 0.9fr) minmax(0, 1fr);
+  grid-template-columns: minmax(178px, 0.92fr) minmax(0, 1fr);
   gap: 12px;
   align-items: center;
 }
 
 .compact-donut {
-  grid-template-columns: minmax(132px, 0.75fr) minmax(0, 1fr);
+  grid-template-columns: minmax(158px, 0.82fr) minmax(0, 1fr);
 }
 
-.donut-canvas,
+.chart-host,
 .visual-chart {
+  position: relative;
   display: block;
   width: 100%;
-  min-height: 190px;
+  min-height: 210px;
+  overflow: hidden;
 }
 
 .visual-chart {
-  height: 220px;
+  height: 264px;
   border: 1px solid rgba(193, 206, 220, 0.72);
   border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.62);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(244, 248, 251, 0.7));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+}
+
+.donut-host {
+  height: 218px;
+  min-height: 218px;
+}
+
+.compact-donut .donut-host {
+  height: 202px;
+  min-height: 202px;
+}
+
+.chart-host > div,
+.chart-host canvas {
+  max-width: none;
+}
+
+.chart-fallback {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
 }
 
 .visual-stat-list {
@@ -696,15 +730,19 @@ main {
 .chart {
   display: block;
   width: 100%;
-  height: 244px;
+  height: 316px;
   border: 1px solid rgba(193, 206, 220, 0.88);
   border-radius: var(--radius);
-  background: linear-gradient(180deg, #fbfdfe, #f6f9fb);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  background:
+    linear-gradient(180deg, rgba(252, 254, 255, 0.92), rgba(244, 248, 251, 0.82));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 10px 22px rgba(28, 44, 64, 0.04);
 }
 
 .chart.compact {
-  height: 168px;
+  height: 224px;
+  min-height: 224px;
 }
 
 .session-grid {
@@ -851,21 +889,180 @@ tbody tr:last-child td {
 }
 
 .coach-card {
-  padding: 16px;
+  position: relative;
+  padding: 20px;
   display: grid;
-  gap: 14px;
-  border-left: 4px solid var(--focus);
-  background: rgba(255, 255, 255, 0.9);
+  gap: 16px;
+  overflow: hidden;
+  border-left: 0;
+  background:
+    linear-gradient(140deg, rgba(255, 255, 255, 0.98), rgba(244, 250, 248, 0.9) 54%, rgba(229, 238, 252, 0.66)),
+    repeating-linear-gradient(90deg, rgba(13, 116, 107, 0.028) 0 1px, transparent 1px 24px);
+  box-shadow:
+    0 18px 44px rgba(30, 48, 70, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 
 .coach-card.warning {
-  border-left-color: var(--amber);
-  background: #fffaf0;
+  background:
+    linear-gradient(140deg, rgba(255, 255, 255, 0.98), rgba(255, 250, 240, 0.94) 56%, rgba(255, 241, 216, 0.74));
 }
 
 .coach-card.danger {
-  border-left-color: var(--red);
-  background: #fff7f8;
+  background:
+    linear-gradient(140deg, rgba(255, 255, 255, 0.98), rgba(255, 247, 248, 0.94) 56%, rgba(255, 229, 231, 0.7));
+}
+
+.coach-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+}
+
+.coach-kicker,
+.coach-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 880;
+  text-transform: uppercase;
+}
+
+.coach-head h3 {
+  margin: 4px 0 6px;
+  color: #101d2f;
+  font-size: 26px;
+  line-height: 1.12;
+}
+
+.coach-head p {
+  max-width: 840px;
+  margin: 0;
+  color: #2b4059;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.coach-state-stack {
+  min-width: 154px;
+  display: grid;
+  gap: 3px;
+  padding: 12px 13px;
+  border: 1px solid rgba(193, 206, 220, 0.72);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.68);
+  text-align: right;
+}
+
+.coach-state-stack span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.coach-state-stack strong {
+  color: #102033;
+  font-size: 16px;
+  text-transform: capitalize;
+}
+
+.coach-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.coach-metrics span {
+  min-height: 58px;
+  display: grid;
+  gap: 2px;
+  padding: 11px 12px;
+  border: 1px solid rgba(193, 206, 220, 0.68);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 780;
+  text-transform: uppercase;
+}
+
+.coach-metrics strong {
+  color: #101d2f;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 20px;
+  line-height: 1.1;
+  text-transform: none;
+}
+
+.coach-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.coach-action {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+  padding: 13px;
+  border: 1px solid rgba(193, 206, 220, 0.68);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.coach-action.do {
+  border-color: rgba(11, 143, 105, 0.22);
+  background: rgba(224, 245, 236, 0.48);
+}
+
+.coach-action.dont {
+  border-color: rgba(189, 57, 74, 0.2);
+  background: rgba(255, 229, 231, 0.36);
+}
+
+.coach-label svg {
+  width: 15px;
+  height: 15px;
+}
+
+.coach-action.do .coach-label {
+  color: #096348;
+}
+
+.coach-action.dont .coach-label {
+  color: #9d2734;
+}
+
+.coach-chip {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  min-height: 44px;
+  padding: 10px 11px;
+  border: 1px solid rgba(193, 206, 220, 0.52);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.74);
+  color: #182638;
+  font-weight: 720;
+}
+
+.coach-chip svg {
+  width: 17px;
+  height: 17px;
+  margin-top: 2px;
+}
+
+.coach-action.do .coach-chip svg {
+  color: var(--green);
+}
+
+.coach-action.dont .coach-chip svg {
+  color: var(--red);
 }
 
 .coach-card ul,
@@ -968,7 +1165,7 @@ tbody tr:last-child td {
   flex: 0 0 auto;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1280px) {
   .metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -984,7 +1181,8 @@ tbody tr:last-child td {
 
   .layout-two,
   .scenario-grid,
-  .research-grid {
+  .research-grid,
+  .coach-action-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -1023,7 +1221,9 @@ tbody tr:last-child td {
   .form-grid,
   .detail-list,
   .session-grid,
-  .progress-wrap {
+  .progress-wrap,
+  .coach-head,
+  .coach-metrics {
     grid-template-columns: 1fr;
   }
 
@@ -1048,5 +1248,18 @@ tbody tr:last-child td {
 
   .status-pill {
     width: fit-content;
+  }
+
+  .coach-state-stack {
+    width: 100%;
+    text-align: left;
+  }
+
+  .chart {
+    height: 278px;
+  }
+
+  .chart.compact {
+    height: 210px;
   }
 }

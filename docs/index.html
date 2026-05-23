@@ -14,11 +14,12 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="assets/styles.css" />
+    <link rel="stylesheet" href="assets/styles.css?v=20260523-procharts" />
     <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script defer src="assets/market-data.js"></script>
-    <script defer src="assets/app.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+    <script defer src="assets/market-data.js?v=20260523-procharts"></script>
+    <script defer src="assets/app.js?v=20260523-procharts"></script>
   </head>
   <body>
     <div class="app-shell">
@@ -104,7 +105,7 @@
                 <span class="status-pill positive" id="cockpitProgress">0.06%</span>
               </div>
               <div class="donut-layout">
-                <canvas id="portfolioDonutChart" class="donut-canvas" height="220" aria-label="Goal progress donut"></canvas>
+                <div id="portfolioDonutChart" class="chart-host donut-host" role="img" aria-label="Goal progress donut"></div>
                 <div class="visual-stat-list">
                   <div>
                     <span>Gap to goal</span>
@@ -130,7 +131,7 @@
                 </div>
                 <span class="status-pill" id="runwayPill">151 sessions</span>
               </div>
-              <canvas id="runwayChart" class="visual-chart" height="220" aria-label="Projected runway curve"></canvas>
+              <div id="runwayChart" class="chart-host visual-chart" role="img" aria-label="Projected runway curve"></div>
             </section>
 
             <section class="visual-card">
@@ -142,7 +143,7 @@
                 <span class="status-pill warning" id="riskBudgetPill">Manual</span>
               </div>
               <div class="donut-layout compact-donut">
-                <canvas id="riskDonutChart" class="donut-canvas" height="190" aria-label="Risk budget donut"></canvas>
+                <div id="riskDonutChart" class="chart-host donut-host" role="img" aria-label="Risk budget donut"></div>
                 <div class="visual-stat-list">
                   <div>
                     <span>Daily stop</span>
@@ -221,7 +222,7 @@
                 </div>
               </div>
 
-              <canvas id="equityChart" class="chart" height="240" aria-label="Equity curve"></canvas>
+              <div id="equityChart" class="chart chart-host" role="img" aria-label="Equity curve"></div>
             </section>
 
             <section class="tool-panel market-panel">
@@ -253,7 +254,7 @@
               <div class="coach-banner" id="overviewCoach">
                 Market context akan muncul setelah kalender dan log terbaca.
               </div>
-              <canvas id="returnChart" class="chart compact" height="160" aria-label="Daily return bars"></canvas>
+              <div id="returnChart" class="chart chart-host compact" role="img" aria-label="Daily return bars"></div>
             </section>
           </div>
 
