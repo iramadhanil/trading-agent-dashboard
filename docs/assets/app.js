@@ -57,7 +57,6 @@
     bindDataTools();
     bindCoachControls();
     bindClosureForm();
-    bindRiskLab();
     bindBackendControls();
     hydrateForms();
     setupChartResizeObserver();
@@ -176,16 +175,14 @@
       ? nextState.settings.projectionMode
       : "target";
 
-    nextState.entries = nextState.entries
+    const rawEntries = nextState.entries
       .filter((entry) => isIsoDate(entry.date))
       .map((entry) => {
-        const start = positiveNumber(entry.start, nextState.settings.startingCapital);
-        const end = positiveNumber(entry.end, start);
-        const returnPct = numberOr(entry.returnPct, start > 0 ? ((end - start) / start) * 100 : 0);
+        const legacyStart = positiveNumber(entry.start, nextState.settings.startingCapital);
+        const legacyEnd = positiveNumber(entry.end, legacyStart);
+        const returnPct = numberOr(entry.returnPct, legacyStart > 0 ? ((legacyEnd - legacyStart) / legacyStart) * 100 : 0);
         return {
           date: entry.date,
-          start,
-          end,
           returnPct,
           trades: Math.max(0, Math.round(numberOr(entry.trades, 0))),
           wins: Math.max(0, Math.round(numberOr(entry.wins, 0))),
@@ -195,10 +192,20 @@
           regime: entry.regime || "trend",
           mistakes: entry.mistakes || "",
           notes: entry.notes || "",
-          plan: entry.plan || ""
+          plan: entry.plan || "",
+          nextDo: entry.nextDo || entry.plan || "",
+          nextDont: entry.nextDont || ""
         };
       })
       .sort((a, b) => a.date.localeCompare(b.date));
+
+    let rollingCapital = nextState.settings.startingCapital;
+    nextState.entries = rawEntries.map((entry) => {
+      const start = rollingCapital;
+      const end = Math.max(0, start * (1 + entry.returnPct / 100));
+      rollingCapital = end;
+      return { ...entry, start, end };
+    });
 
     nextState.manualClosures = nextState.manualClosures
       .filter((closure) => isIsoDate(closure.date))
@@ -246,26 +253,11 @@
   }
 
   function bindDailyForm() {
-    const startInput = $("#entryStart");
-    const endInput = $("#entryEnd");
     const returnInput = $("#entryReturn");
 
-    endInput.addEventListener("input", () => {
-      const start = numberOr(startInput.value, 0);
-      const end = numberOr(endInput.value, 0);
-      if (start > 0 && end > 0) returnInput.value = roundTo(((end - start) / start) * 100, 2);
-    });
-
-    returnInput.addEventListener("input", () => {
-      const start = numberOr(startInput.value, 0);
-      const returnPct = numberOr(returnInput.value, 0);
-      if (start > 0) endInput.value = roundTo(start * (1 + returnPct / 100), 2);
-    });
-
-    $("#useLatestStart").addEventListener("click", () => {
-      startInput.value = roundTo(getLatestCapital(), 2);
-      endInput.value = "";
-      returnInput.value = "";
+    ["#entryDate", "#entryReturn"].forEach((selector) => {
+      $(selector).addEventListener("input", updateDailyEntryPreview);
+      $(selector).addEventListener("change", updateDailyEntryPreview);
     });
 
     $("#dailyForm").addEventListener("submit", (event) => {
@@ -276,29 +268,30 @@
         return;
       }
 
-      const start = positiveNumber(startInput.value, getLatestCapitalBefore(date));
-      let end = positiveNumber(endInput.value, NaN);
       const returnPctInput = numberOr(returnInput.value, NaN);
-      if (!Number.isFinite(end) && Number.isFinite(returnPctInput)) {
-        end = start * (1 + returnPctInput / 100);
+      if (!Number.isFinite(returnPctInput)) {
+        setTemporaryText("#entryStatus", "Return invalid");
+        return;
       }
-      if (!Number.isFinite(end)) end = start;
-      const returnPct = start > 0 ? ((end - start) / start) * 100 : 0;
+      const start = getLatestCapitalBefore(date);
+      const end = Math.max(0, start * (1 + returnPctInput / 100));
 
       const entry = {
         date,
         start,
         end,
-        returnPct,
-        trades: Math.max(0, Math.round(numberOr($("#entryTrades").value, 0))),
-        wins: Math.max(0, Math.round(numberOr($("#entryWins").value, 0))),
+        returnPct: returnPctInput,
+        trades: 0,
+        wins: 0,
         grade: $("#entryGrade").value,
         discipline: $("#entryDiscipline").value,
         mood: $("#entryMood").value,
         regime: $("#entryRegime").value,
         mistakes: $("#entryMistakes").value.trim(),
         notes: $("#entryNotes").value.trim(),
-        plan: $("#entryPlan").value.trim()
+        plan: $("#entryNextDo").value.trim(),
+        nextDo: $("#entryNextDo").value.trim(),
+        nextDont: $("#entryNextDont").value.trim()
       };
 
       const existingIndex = state.entries.findIndex((item) => item.date === date);
@@ -336,6 +329,29 @@
     });
   }
 
+  function updateDailyEntryPreview() {
+    const date = $("#entryDate").value;
+    const returnPct = numberOr($("#entryReturn").value, NaN);
+    if (!isIsoDate(date) || !Number.isFinite(returnPct)) {
+      setText("#entryPreview", "Input return harian untuk melihat equity dan target baru secara otomatis.");
+      return;
+    }
+    const start = getLatestCapitalBefore(date);
+    const end = Math.max(0, start * (1 + returnPct / 100));
+    const existingIndex = state.entries.findIndex((entry) => entry.date === date);
+    const sessionsUsed = existingIndex >= 0
+      ? existingIndex + 1
+      : state.entries.filter((entry) => entry.date < date).length + 1;
+    const targetPlan = getTargetAdjustment(end, sessionsUsed);
+    const adjusted = Number.isFinite(targetPlan.requiredRate)
+      ? formatPercent(targetPlan.requiredRate * 100)
+      : "Need recovery";
+    setText(
+      "#entryPreview",
+      `${formatPercent(returnPct)} -> ${moneyFormat.format(end)} equity. Adjusted daily target: ${adjusted}.`
+    );
+  }
+
   function bindDataTools() {
     $("#exportJson").addEventListener("click", () => {
       downloadText(
@@ -347,21 +363,20 @@
 
     $("#exportCsv").addEventListener("click", () => {
       const rows = [
-        ["date", "start", "end", "returnPct", "trades", "wins", "grade", "discipline", "mood", "regime", "mistakes", "notes", "plan"],
+        ["date", "start", "end", "returnPct", "grade", "discipline", "mood", "regime", "mistakes", "notes", "nextDo", "nextDont"],
         ...state.entries.map((entry) => [
           entry.date,
           entry.start,
           entry.end,
           entry.returnPct,
-          entry.trades,
-          entry.wins,
           entry.grade,
           entry.discipline,
           entry.mood,
           entry.regime,
           entry.mistakes,
           entry.notes,
-          entry.plan
+          entry.nextDo,
+          entry.nextDont
         ])
       ];
       const csv = rows.map((row) => row.map(csvCell).join(",")).join("\n");
@@ -422,18 +437,6 @@
     });
   }
 
-  function bindRiskLab() {
-    $("#riskForm").addEventListener("submit", (event) => {
-      event.preventDefault();
-      renderRiskSimulation();
-    });
-    $("#runRiskSimulation").addEventListener("click", renderRiskSimulation);
-
-    ["#permEnergy", "#permMarket", "#permCatalyst", "#permDiscipline"].forEach((selector) => {
-      $(selector).addEventListener("change", renderPermission);
-    });
-  }
-
   function bindBackendControls() {
     $("#backendForm").addEventListener("submit", (event) => {
       event.preventDefault();
@@ -480,43 +483,39 @@
     const today = getTodayIso("America/New_York");
     const nextDate = state.entries.some((entry) => entry.date === today) ? nextTradingDate(addDays(today, 1)) : today;
     $("#entryDate").value = nextDate;
-    $("#entryStart").value = roundTo(getLatestCapitalBefore(nextDate), 2);
-    $("#entryEnd").value = "";
     $("#entryReturn").value = "";
-    $("#entryTrades").value = "";
-    $("#entryWins").value = "";
     $("#entryGrade").value = "B";
     $("#entryDiscipline").value = "3";
     $("#entryMood").value = "calm";
     $("#entryRegime").value = "trend";
     $("#entryMistakes").value = "";
     $("#entryNotes").value = "";
-    $("#entryPlan").value = "";
+    $("#entryNextDo").value = "";
+    $("#entryNextDont").value = "";
+    updateDailyEntryPreview();
   }
 
   function fillDailyForm(entry) {
     $("#entryDate").value = entry.date;
-    $("#entryStart").value = roundTo(entry.start, 2);
-    $("#entryEnd").value = roundTo(entry.end, 2);
     $("#entryReturn").value = roundTo(entry.returnPct, 2);
-    $("#entryTrades").value = entry.trades;
-    $("#entryWins").value = entry.wins;
     $("#entryGrade").value = entry.grade;
     $("#entryDiscipline").value = entry.discipline;
     $("#entryMood").value = entry.mood;
     $("#entryRegime").value = entry.regime;
     $("#entryMistakes").value = entry.mistakes;
     $("#entryNotes").value = entry.notes;
-    $("#entryPlan").value = entry.plan;
+    $("#entryNextDo").value = entry.nextDo || entry.plan || "";
+    $("#entryNextDont").value = entry.nextDont || "";
+    updateDailyEntryPreview();
   }
 
   function renderAll() {
     renderClocksAndMarket();
     renderMetricsAndProjection();
     renderJournal();
+    renderNextSessionPlaybook();
     renderCoach();
     renderCalendar();
-    renderPermission();
     renderPerformanceInsights();
     renderMemoryStatus();
     renderBackendStatus();
@@ -552,6 +551,7 @@
     const drawdown = getDrawdownStats();
     const projection = getProjection();
     const progress = clamp((latestCapital / state.settings.goal) * 100, 0, 100);
+    const adjustment = projection.adjustment;
 
     $("#metricCapital").textContent = moneyFormat.format(latestCapital);
     $("#metricReturn").textContent = `Cumulative return ${formatPercent(cumulativeReturn)}`;
@@ -561,8 +561,10 @@
     $("#metricEtaSub").textContent = projection.targetDate
       ? `ETA ${formatCompactDate(projection.targetDate)}`
       : "Trading days tersisa";
-    $("#metricPace").textContent = formatPercent(projection.rate * 100);
-    $("#metricPaceSub").textContent = projection.modeLabel;
+    $("#metricPace").textContent = Number.isFinite(adjustment.requiredRate)
+      ? formatPercent(adjustment.requiredRate * 100)
+      : "Recovery";
+    $("#metricPaceSub").textContent = `Adjusted target (${formatSignedPercent(adjustment.delta * 100)})`;
     $("#metricDrawdown").textContent = formatPercent(drawdown.current * 100);
     $("#metricDrawdownSub").textContent = `Max historical ${formatPercent(drawdown.max * 100)}`;
     $("#goalProgress").textContent = `${formatPercent(progress)}`;
@@ -574,25 +576,30 @@
       ? `${shortMoney(projection.nextMilestone.amount)} / ${integerFormat.format(projection.nextMilestone.days)} sessions`
       : "Goal reached";
     $("#projectionSummary").textContent = projection.summary;
-    renderCockpitStats(latestCapital, projection, progress);
+    renderCockpitStats(latestCapital, projection, progress, adjustment);
 
     renderMilestones(projection.rate, projection.firstSession);
   }
 
-  function renderCockpitStats(latestCapital, projection, progress) {
+  function renderCockpitStats(latestCapital, projection, progress, adjustment) {
     const gap = Math.max(0, state.settings.goal - latestCapital);
     const next = projection.nextMilestone;
-    const dailyStop = latestCapital * (state.settings.maxDailyLoss / 100);
-    const perTrade = latestCapital * (state.settings.riskPerTrade / 100);
+    const baseline = state.settings.targetDailyReturn / 100;
+    const required = adjustment.requiredRate;
+    const delta = adjustment.delta;
     setText("#cockpitProgress", formatPercent(progress));
     setText("#cockpitGap", moneyFormat.format(gap));
     setText("#cockpitMilestone", next ? moneyFormat.format(next.amount) : "Goal reached");
-    setText("#cockpitDailyTarget", formatPercent(projection.rate * 100));
+    setText("#cockpitDailyTarget", Number.isFinite(required) ? formatPercent(required * 100) : "Recovery");
     setText("#runwayPill", Number.isFinite(projection.days) ? `${integerFormat.format(projection.days)} sessions` : "Needs pace");
-    setText("#riskDailyStop", moneyFormat.format(dailyStop));
-    setText("#riskPerTrade", moneyFormat.format(perTrade));
-    setText("#riskTradeCap", String(state.settings.maxTradesPerDay));
-    setText("#riskBudgetPill", `${formatPercent(state.settings.maxDailyLoss)} stop`);
+    setText("#riskDailyStop", formatPercent(baseline * 100));
+    setText("#riskPerTrade", Number.isFinite(required) ? formatPercent(required * 100) : "Need reset");
+    setText("#riskTradeCap", Number.isFinite(delta) ? formatSignedPercent(delta * 100) : "-");
+    setPill(
+      "#riskBudgetPill",
+      Number.isFinite(delta) ? `${formatSignedPercent(delta * 100)} needed` : "Recovery",
+      delta > 0.005 ? "warning" : delta < -0.005 ? "positive" : "positive"
+    );
   }
 
   function renderMilestones(rate, firstSession) {
@@ -640,7 +647,7 @@
     if (!state.entries.length) {
       $("#journalTable").innerHTML = `
         <tr>
-          <td colspan="8" class="muted">Belum ada entry. Tambahkan performa hari pertama dari form di atas.</td>
+          <td colspan="7" class="muted">Belum ada entry. Tambahkan return harian pertama dari form di atas.</td>
         </tr>
       `;
       return;
@@ -649,17 +656,21 @@
     $("#journalTable").innerHTML = [...state.entries]
       .reverse()
       .map((entry) => {
-        const winRate = entry.trades > 0 ? `, WR ${formatPercent((entry.wins / entry.trades) * 100)}` : "";
         const returnClass = entry.returnPct >= 0 ? "gain" : "loss";
+        const adjustment = getTargetAdjustment(entry.end, state.entries.findIndex((item) => item.date === entry.date) + 1);
+        const nextPlan = [entry.nextDo, entry.nextDont].filter(Boolean).join(" / ");
         return `
           <tr>
             <td>${escapeHtml(entry.date)}<br><span class="muted">${escapeHtml(entry.regime)}</span></td>
-            <td class="num">${moneyFormat.format(entry.start)}</td>
-            <td class="num">${moneyFormat.format(entry.end)}</td>
             <td class="num ${returnClass}">${formatPercent(entry.returnPct)}</td>
-            <td class="num">${entry.trades}${winRate}</td>
+            <td class="num">${moneyFormat.format(entry.end)}</td>
+            <td class="num">${Number.isFinite(adjustment.requiredRate) ? formatPercent(adjustment.requiredRate * 100) : "-"}</td>
             <td>${escapeHtml(entry.grade)}</td>
             <td>${escapeHtml(entry.discipline)} / 5</td>
+            <td>
+              <span>${escapeHtml(entry.notes || "-")}</span>
+              ${nextPlan ? `<br><span class="muted">${escapeHtml(nextPlan)}</span>` : ""}
+            </td>
             <td>
               <div class="form-actions">
                 <button type="button" data-action="edit" data-date="${escapeHtml(entry.date)}" title="Edit entry">
@@ -675,6 +686,39 @@
       })
       .join("");
     refreshIcons();
+  }
+
+  function renderNextSessionPlaybook() {
+    const latest = getLatestEntry();
+    if (!latest) {
+      setPill("#nextSessionPill", "Waiting for log", "warning");
+      $("#nextSessionPlaybook").innerHTML = `
+        <section class="coach-action do">
+          <span class="coach-label"><i data-lucide="check-circle-2"></i>Do next</span>
+          <div class="coach-chip"><i data-lucide="arrow-right"></i><span>Save one trading day to generate tomorrow's playbook.</span></div>
+        </section>
+        <section class="coach-action dont">
+          <span class="coach-label"><i data-lucide="ban"></i>Don't next</span>
+          <div class="coach-chip"><i data-lucide="octagon-x"></i><span>Do not trade without a written setup review.</span></div>
+        </section>
+      `;
+      return;
+    }
+
+    const nextSession = nextTradingDate(addDays(latest.date, 1));
+    setPill("#nextSessionPill", formatCompactDate(nextSession), latest.returnPct < 0 ? "warning" : "positive");
+    const doItems = splitPlanItems(latest.nextDo || latest.plan || "Trade only the cleanest setup from today's review.");
+    const dontItems = splitPlanItems(latest.nextDont || latest.mistakes || "Do not repeat today's lowest-quality decision.");
+    $("#nextSessionPlaybook").innerHTML = `
+      <section class="coach-action do">
+        <span class="coach-label"><i data-lucide="check-circle-2"></i>Do next</span>
+        ${doItems.map((item) => `<div class="coach-chip"><i data-lucide="arrow-right"></i><span>${escapeHtml(item)}</span></div>`).join("")}
+      </section>
+      <section class="coach-action dont">
+        <span class="coach-label"><i data-lucide="ban"></i>Don't next</span>
+        ${dontItems.map((item) => `<div class="coach-chip"><i data-lucide="octagon-x"></i><span>${escapeHtml(item)}</span></div>`).join("")}
+      </section>
+    `;
   }
 
   function renderCoach() {
@@ -702,6 +746,7 @@
     setPill("#coachRiskPill", pillText, pillLevel);
 
     const actions = buildCoachActions(selectedState, selectedMarket, latest, drawdown, lossStreak);
+    const adjustment = getProjection().adjustment;
     $("#coachCard").className = `coach-card ${cardClass}`;
     $("#coachCard").innerHTML = `
       <div class="coach-head">
@@ -718,6 +763,7 @@
       <div class="coach-metrics">
         <span><strong>${formatPercent(drawdown.current * 100)}</strong> drawdown</span>
         <span><strong>${lossStreak}</strong> loss streak</span>
+        <span><strong>${Number.isFinite(adjustment.requiredRate) ? formatPercent(adjustment.requiredRate * 100) : "-"}</strong> adjusted target</span>
         <span><strong>${latest ? formatPercent(latest.returnPct) : "0.00%"}</strong> latest day</span>
       </div>
       <div class="coach-action-grid">
@@ -729,6 +775,9 @@
           <span class="coach-label"><i data-lucide="ban"></i>Do not</span>
           ${actions.doNot.map((item) => `<div class="coach-chip"><i data-lucide="octagon-x"></i><span>${escapeHtml(item)}</span></div>`).join("")}
         </section>
+      </div>
+      <div class="coach-principles">
+        ${actions.principles.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}
       </div>
     `;
     refreshIcons();
@@ -744,9 +793,11 @@
       doNow: [
         `Set max daily loss ${formatPercent(state.settings.maxDailyLoss)} sebelum entry pertama.`,
         `Batasi ${state.settings.maxTradesPerDay} trade, risk sekitar ${formatPercent(state.settings.riskPerTrade)} per trade.`,
-        "Trade hanya saat spread, volume, dan VWAP context mendukung."
+        "Trade hanya saat spread, volume, dan VWAP context mendukung.",
+        "Tulis skenario exit sebelum posisi masuk."
       ],
-      doNot: ["Jangan tambah posisi rugi.", "Jangan ubah stop karena emosi.", "Jangan mengejar candle yang sudah jauh dari plan."]
+      doNot: ["Jangan tambah posisi rugi.", "Jangan ubah stop karena emosi.", "Jangan mengejar candle yang sudah jauh dari plan."],
+      principles: ["Process score > P/L", "Size follows state", "No setup, no trade"]
     };
 
     const overlays = {
@@ -754,31 +805,36 @@
         title: "Win high control",
         summary: "Profit besar sering bikin kualitas keputusan turun karena merasa market mudah.",
         doNow: ["Lock jurnal profit hari ini.", "Turunkan size untuk trade berikutnya.", "Ambil jeda 10 menit sebelum entry ulang."],
-        doNot: ["Jangan menaikkan size karena baru menang.", "Jangan membuka trade tambahan hanya karena ingin memperbesar hari hijau."]
+        doNot: ["Jangan menaikkan size karena baru menang.", "Jangan membuka trade tambahan hanya karena ingin memperbesar hari hijau."],
+        principles: ["Euphoria reduces selectivity", "Green day protection", "Walk away is alpha"]
       },
       fomo: {
         title: "FOMO interrupt",
         summary: "Kalau entry terasa harus sekarang juga, biasanya edge sudah turun.",
         doNow: ["Tunggu pullback atau reclaim level jelas.", "Tuliskan invalidation sebelum klik buy.", "Lewati trade jika reward/risk di bawah 2:1."],
-        doNot: ["Jangan market order ke candle extended.", "Jangan beli hanya karena ticker ramai di chat atau scanner."]
+        doNot: ["Jangan market order ke candle extended.", "Jangan beli hanya karena ticker ramai di chat atau scanner."],
+        principles: ["Urgency is not edge", "Wait for structure", "Missed move is neutral"]
       },
       revenge: {
         title: "Revenge lockout",
         summary: "Dorongan membalas rugi adalah sinyal stop, bukan sinyal entry.",
         doNow: ["Stop trading minimal 30 menit.", "Tutup platform order entry.", "Tulis satu kalimat: kerugian hari ini adalah biaya menjaga akun tetap hidup."],
-        doNot: ["Jangan cari trade baru untuk balik modal.", "Jangan gandakan size.", "Jangan pindah ke ticker asing tanpa setup."]
+        doNot: ["Jangan cari trade baru untuk balik modal.", "Jangan gandakan size.", "Jangan pindah ke ticker asing tanpa setup."],
+        principles: ["Revenge is a lockout signal", "Capital before ego", "Cooldown before analysis"]
       },
       drawdown: {
         title: "Drawdown recovery",
         summary: "Tujuan fase ini adalah memulihkan eksekusi, bukan memulihkan P/L secepat mungkin.",
         doNow: ["Size 50% sampai dua hari hijau berturut-turut.", "Ambil hanya A/A+ setup.", "Review tiga loss terakhir sebelum sesi berikutnya."],
-        doNot: ["Jangan mengejar target $1M ketika equity curve sedang turun.", "Jangan overtrade untuk mempercepat recovery."]
+        doNot: ["Jangan mengejar target ketika equity curve sedang turun.", "Jangan overtrade untuk mempercepat recovery."],
+        principles: ["Recover process first", "Lower variance", "Small clean wins rebuild trust"]
       },
       tired: {
         title: "Low energy filter",
         summary: "Energi rendah membuat disiplin stop-loss dan sabar entry biasanya memburuk.",
         doNow: ["Trade maksimal satu setup A+.", "Gunakan size 50%.", "No trade jika belum tidur cukup atau fokus pecah."],
-        doNot: ["Jangan trading premarket yang spread-nya lebar.", "Jangan ambil scalping cepat saat reaksi melambat."]
+        doNot: ["Jangan trading premarket yang spread-nya lebar.", "Jangan ambil scalping cepat saat reaksi melambat."],
+        principles: ["Fatigue lowers inhibition", "Reduce decisions", "One-and-done mode"]
       }
     };
 
@@ -794,7 +850,8 @@
       title: chosen.title,
       summary: chosen.summary,
       doNow: [...(chosen.doNow || base.doNow)],
-      doNot: [...(chosen.doNot || base.doNot)]
+      doNot: [...(chosen.doNot || base.doNot)],
+      principles: [...(chosen.principles || base.principles)]
     };
 
     if (marketOverlay[selectedMarket]) result.doNow.unshift(marketOverlay[selectedMarket][0]);
@@ -912,137 +969,6 @@
         `
       )
       .join("");
-  }
-
-  function renderRiskSimulation() {
-    const winRate = clamp(numberOr($("#riskWinRate").value, 55) / 100, 0, 1);
-    const avgWin = Math.max(0, numberOr($("#riskAvgWin").value, 2.2) / 100);
-    const avgLoss = Math.max(0, numberOr($("#riskAvgLoss").value, 1.2) / 100);
-    const tradesPerDay = Math.max(1, Math.round(numberOr($("#riskTradesPerDay").value, 3)));
-    const maxDrawdownStop = Math.max(0.01, numberOr($("#riskMaxDrawdown").value, 20) / 100);
-    const paths = clamp(Math.round(numberOr($("#riskPaths").value, 1000)), 100, 3000);
-    const maxDays = 520;
-    const startCapital = getLatestCapital();
-    const goal = state.settings.goal;
-    const results = [];
-    let reached = 0;
-    let stopped = 0;
-
-    for (let path = 0; path < paths; path += 1) {
-      let equity = startCapital;
-      let peak = startCapital;
-      let reachedDay = null;
-      let stopDay = null;
-      for (let day = 1; day <= maxDays; day += 1) {
-        let dailyReturn = 0;
-        for (let trade = 0; trade < tradesPerDay; trade += 1) {
-          const isWin = Math.random() < winRate;
-          const noise = 0.65 + Math.random() * 0.7;
-          dailyReturn += isWin ? avgWin * noise : -avgLoss * noise;
-        }
-        equity *= Math.max(0.05, 1 + dailyReturn);
-        peak = Math.max(peak, equity);
-        const drawdown = peak > 0 ? equity / peak - 1 : 0;
-        if (equity >= goal) {
-          reachedDay = day;
-          break;
-        }
-        if (drawdown <= -maxDrawdownStop) {
-          stopDay = day;
-          break;
-        }
-      }
-      if (reachedDay) reached += 1;
-      if (stopDay) stopped += 1;
-      results.push({
-        equity,
-        reachedDay,
-        stopDay
-      });
-    }
-
-    const reachedDays = results.filter((item) => item.reachedDay).map((item) => item.reachedDay).sort((a, b) => a - b);
-    const finalEquities = results.map((item) => item.equity).sort((a, b) => a - b);
-    const reachProbability = reached / paths;
-    const stopProbability = stopped / paths;
-    const medianReach = reachedDays.length ? percentile(reachedDays, 0.5) : null;
-    const p10 = percentile(finalEquities, 0.1);
-    const p50 = percentile(finalEquities, 0.5);
-    const p90 = percentile(finalEquities, 0.9);
-    const expectedPerTrade = winRate * avgWin - (1 - winRate) * avgLoss;
-    const roughDailyEdge = expectedPerTrade * tradesPerDay;
-
-    const level = stopProbability > 0.35 ? "danger" : reachProbability > 0.5 ? "positive" : "warning";
-    setPill("#riskResultPill", `${formatPercent(reachProbability * 100)} reach rate`, level);
-    $("#riskOutput").innerHTML = [
-      ["Reach $1M probability", formatPercent(reachProbability * 100), "Within 520 trading days under the entered assumptions."],
-      ["Drawdown stop probability", formatPercent(stopProbability * 100), `Stopped after ${formatPercent(maxDrawdownStop * 100)} drawdown from peak.`],
-      ["Median days if reached", medianReach ? `${integerFormat.format(medianReach)} days` : "Not reached in most paths", "Use this as a planning stress test, not a promise."],
-      ["Model daily edge", formatPercent(roughDailyEdge * 100), "Expected value before slippage, bad fills, fees, and emotional mistakes."],
-      ["Final equity p10 / p50 / p90", `${moneyFormat.format(p10)} / ${moneyFormat.format(p50)} / ${moneyFormat.format(p90)}`, "Distribution after 520 trading days or earlier stop/reach."]
-    ]
-      .map(
-        ([title, value, note]) => `
-          <article class="scenario-item">
-            <strong>${escapeHtml(title)}</strong>
-            <p class="metric-inline">${escapeHtml(value)}</p>
-            <span class="muted">${escapeHtml(note)}</span>
-          </article>
-        `
-      )
-      .join("");
-  }
-
-  function renderPermission() {
-    const energy = numberOr($("#permEnergy").value, 3);
-    const market = numberOr($("#permMarket").value, 3);
-    const catalyst = numberOr($("#permCatalyst").value, 3);
-    const discipline = numberOr($("#permDiscipline").value, 3);
-    const drawdown = getDrawdownStats().current;
-    const latest = getLatestEntry();
-    const lossPenalty = latest && latest.returnPct < 0 ? 1 : 0;
-    const drawdownPenalty = drawdown <= -0.1 ? 2 : drawdown <= -0.05 ? 1 : 0;
-    const score = energy + market + catalyst + discipline - lossPenalty - drawdownPenalty;
-    let title = "Trade permission: normal";
-    let level = "positive";
-    let size = "Normal size hanya untuk A setup, maksimal sesuai risk cap.";
-    let rules = [
-      "Predefine entry, stop, and target before order.",
-      "Skip if spread/volume is not clean.",
-      "Stop after max daily loss or two low-quality decisions."
-    ];
-
-    if (score < 11) {
-      title = "Trade permission: restricted";
-      level = "warning";
-      size = "Use half size, one trade at a time, no chasing.";
-      rules = [
-        "Only A/A+ catalyst with clean RTH liquidity.",
-        "No premarket thin-spread entries.",
-        "End session after one rule violation."
-      ];
-    }
-
-    if (score < 8 || market <= 1 || discipline <= 1 || drawdown <= -0.12) {
-      title = "Trade permission: no-trade / defense";
-      level = "danger";
-      size = "No new risk unless this is a pre-planned exceptional setup with tiny size.";
-      rules = [
-        "Protect capital and review last trades.",
-        "Do not attempt to recover losses today.",
-        "Prepare tomorrow's watchlist instead of forcing execution."
-      ];
-    }
-
-    setPill("#permissionPill", `${score}/20`, level);
-    $("#permissionCard").className = `coach-card ${level === "danger" ? "danger" : level === "warning" ? "warning" : ""}`;
-    $("#permissionCard").innerHTML = `
-      <div>
-        <h3>${escapeHtml(title)}</h3>
-        <p>${escapeHtml(size)}</p>
-      </div>
-      <ul>${rules.map((rule) => `<li>${escapeHtml(rule)}</li>`).join("")}</ul>
-    `;
   }
 
   function renderPerformanceInsights() {
@@ -1482,7 +1408,7 @@
     return {
       show: !compact,
       confine: true,
-      appendToBody: false,
+      appendToBody: true,
       borderWidth: 1,
       borderColor: "rgba(193, 206, 220, 0.78)",
       backgroundColor: "rgba(255, 255, 255, 0.97)",
@@ -1499,6 +1425,7 @@
         type: "line",
         lineStyle: { color: "rgba(36, 95, 199, 0.34)", width: 1.2 },
         label: {
+          show: false,
           borderWidth: 0,
           borderRadius: 6,
           padding: [4, 6],
@@ -1588,9 +1515,12 @@
     const element = $("#riskDonutChart");
     if (!element) return;
     const compact = isCompactChart(element);
-    const dailyStop = Math.max(0.01, state.settings.maxDailyLoss);
-    const perTrade = Math.max(0.01, state.settings.riskPerTrade);
-    const remaining = Math.max(0.01, 100 - dailyStop - perTrade * state.settings.maxTradesPerDay);
+    const adjustment = getProjection().adjustment;
+    const baseline = Math.max(0.01, adjustment.baselineRate * 100);
+    const required = Number.isFinite(adjustment.requiredRate) ? Math.max(0, adjustment.requiredRate * 100) : baseline;
+    const extra = Math.max(0, required - baseline);
+    const cushion = Math.max(0.01, Math.max(baseline, required) * 1.35 - required);
+    const centerColor = extra > 0.35 ? "#b56a00" : "#0b8f69";
     renderEChart(element, {
       backgroundColor: "transparent",
       animationEasing: "cubicOut",
@@ -1612,8 +1542,8 @@
           left: "center",
           top: "38%",
           style: {
-            text: formatPercent(dailyStop),
-            fill: "#132033",
+            text: Number.isFinite(adjustment.requiredRate) ? formatPercent(required) : "Reset",
+            fill: centerColor,
             fontFamily: "IBM Plex Mono",
             fontSize: compact ? 19 : 22,
             fontWeight: 800,
@@ -1625,7 +1555,7 @@
           left: "center",
           top: "52%",
           style: {
-            text: "DAILY STOP",
+            text: "REQUIRED",
             fill: "#66758a",
             fontFamily: "Manrope",
             fontSize: 10,
@@ -1644,9 +1574,9 @@
           labelLine: { show: false },
           itemStyle: { borderRadius: 8, borderColor: "#ffffff", borderWidth: 2 },
           data: [
-            { value: dailyStop, name: "Daily stop", itemStyle: { color: "#bd394a" } },
-            { value: perTrade * state.settings.maxTradesPerDay, name: "Trade risk", itemStyle: { color: "#b56a00" } },
-            { value: remaining, name: "Reserve", itemStyle: { color: "#d9e3ec" } }
+            { value: Math.min(required, baseline), name: "Baseline", itemStyle: { color: "#0b8f69" } },
+            { value: extra, name: "Extra needed", itemStyle: { color: "#b56a00" } },
+            { value: cushion, name: "Plan buffer", itemStyle: { color: "#d9e3ec" } }
           ]
         }
       ]
@@ -1670,6 +1600,15 @@
     if (points[points.length - 1].day !== days) {
       points.push({ day: days, value: current * (1 + projection.rate) ** days });
     }
+    const adjustmentDays = Number.isFinite(projection.adjustment.remainingPlanSessions)
+      ? Math.min(projection.adjustment.remainingPlanSessions, Math.max(days, 30))
+      : days;
+    const adjustedPoints = Number.isFinite(projection.adjustment.requiredRate)
+      ? Array.from({ length: Math.min(36, adjustmentDays) + 1 }, (_, index) => {
+          const step = Math.round((adjustmentDays / Math.min(36, adjustmentDays)) * index);
+          return [step, current * (1 + projection.adjustment.requiredRate) ** step];
+        })
+      : [];
     const milestones = [1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000].flatMap((milestone) => {
       const neededDays = daysToReach(current, milestone, projection.rate);
       if (!Number.isFinite(neededDays) || neededDays > days || milestone < current) return [];
@@ -1739,6 +1678,19 @@
           }
         },
         {
+          name: "Adjusted target",
+          type: "line",
+          smooth: 0.38,
+          showSymbol: false,
+          data: adjustedPoints,
+          lineStyle: {
+            width: 2.5,
+            type: "dashed",
+            color: projection.adjustment.delta > 0 ? "#b56a00" : "#0b8f69"
+          },
+          emphasis: { focus: "series" }
+        },
+        {
           name: "Milestone",
           type: "scatter",
           symbolSize: 10,
@@ -1790,20 +1742,33 @@
     if (!element) return;
     const compact = isCompactChart(element);
     const entries = state.entries;
+    const projection = getProjection();
     const actualPoints = [{ label: "Start", value: state.settings.startingCapital }].concat(
       entries.map((entry) => ({ label: entry.date.slice(5), value: entry.end }))
     );
-    const rate = Math.max(0, getProjectionRate());
+    const rate = Math.max(0, projection.rate);
     const previewLength = entries.length ? 12 : 18;
     const projectionPoints = buildProjectionPreview(actualPoints[actualPoints.length - 1].value, rate, previewLength).map((point) => ({
       label: point.date,
       value: point.value
     }));
+    const adjustedProjectionPoints = Number.isFinite(projection.adjustment.requiredRate)
+      ? buildProjectionPreview(actualPoints[actualPoints.length - 1].value, Math.max(0, projection.adjustment.requiredRate), previewLength).map((point) => ({
+          label: point.date,
+          value: point.value
+        }))
+      : [];
     const categories = actualPoints.map((point) => point.label).concat(projectionPoints.map((point) => point.label));
     const projectionSeries = new Array(Math.max(0, actualPoints.length - 1)).fill(null).concat([
       actualPoints[actualPoints.length - 1].value,
       ...projectionPoints.map((point) => point.value)
     ]);
+    const adjustedSeries = adjustedProjectionPoints.length
+      ? new Array(Math.max(0, actualPoints.length - 1)).fill(null).concat([
+          actualPoints[actualPoints.length - 1].value,
+          ...adjustedProjectionPoints.map((point) => point.value)
+        ])
+      : [];
     const actualSeries = actualPoints.map((point) => point.value).concat(new Array(projectionPoints.length).fill(null));
 
     renderEChart(element, {
@@ -1864,6 +1829,20 @@
           data: actualSeries,
           lineStyle: { width: 3.4, color: "#0b8f69", shadowBlur: 10, shadowColor: "rgba(11, 143, 105, 0.24)" },
           itemStyle: { color: "#0b8f69", borderColor: "#ffffff", borderWidth: 2 },
+          emphasis: { focus: "series" }
+        },
+        {
+          name: "Adjusted target",
+          type: "line",
+          smooth: 0.42,
+          symbol: "none",
+          connectNulls: true,
+          data: adjustedSeries,
+          lineStyle: {
+            width: 2.4,
+            type: "dotted",
+            color: projection.adjustment.delta > 0 ? "#b56a00" : "#0b8f69"
+          },
           emphasis: { focus: "series" }
         },
         {
@@ -2127,10 +2106,32 @@
     const targetDate = Number.isFinite(days) && firstSession ? addTradingDays(firstSession, days, true) : null;
     const nextMilestone = getNextMilestone(current, rate, firstSession);
     const modeLabel = getProjectionModeLabel();
+    const adjustment = getTargetAdjustment(current);
     const summary = Number.isFinite(days)
-      ? `${formatPercent(rate * 100)} pace | ${integerFormat.format(days)} sessions | ETA ${targetDate ? formatCompactDate(targetDate) : "pending"}`
+      ? `${formatPercent(rate * 100)} projection pace | ${integerFormat.format(days)} sessions | adjusted target ${Number.isFinite(adjustment.requiredRate) ? formatPercent(adjustment.requiredRate * 100) : "recovery"}`
       : "Pace unavailable. Stabilize execution first.";
-    return { current, goal, rate, days, firstSession, targetDate, nextMilestone, modeLabel, summary };
+    return { current, goal, rate, days, firstSession, targetDate, nextMilestone, modeLabel, summary, adjustment };
+  }
+
+  function getTargetAdjustment(current = getLatestCapital(), sessionsUsed = state.entries.length) {
+    const baselineRate = Math.max(0.000001, state.settings.targetDailyReturn / 100);
+    const baselineSessions = daysToReach(state.settings.startingCapital, state.settings.goal, baselineRate);
+    const remainingPlanSessions = Number.isFinite(baselineSessions)
+      ? Math.max(1, baselineSessions - sessionsUsed)
+      : Infinity;
+    const requiredRate = current >= state.settings.goal
+      ? 0
+      : current > 0 && Number.isFinite(remainingPlanSessions)
+        ? Math.pow(state.settings.goal / current, 1 / remainingPlanSessions) - 1
+        : Infinity;
+    return {
+      baselineRate,
+      baselineSessions,
+      sessionsUsed,
+      remainingPlanSessions,
+      requiredRate,
+      delta: Number.isFinite(requiredRate) ? requiredRate - baselineRate : Infinity
+    };
   }
 
   function getProjectionRate() {
@@ -2202,6 +2203,14 @@
       else break;
     }
     return streak;
+  }
+
+  function splitPlanItems(value) {
+    return String(value || "")
+      .split(/\n|;|,/)
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .slice(0, 4);
   }
 
   function getFirstCountedSession() {
@@ -2568,12 +2577,6 @@
     return Math.min(max, Math.max(min, value));
   }
 
-  function percentile(values, ratio) {
-    if (!values.length) return 0;
-    const index = clamp(Math.round((values.length - 1) * ratio), 0, values.length - 1);
-    return values[index];
-  }
-
   function pad2(value) {
     return String(value).padStart(2, "0");
   }
@@ -2581,6 +2584,11 @@
   function formatPercent(value) {
     if (!Number.isFinite(value)) return "-";
     return `${value >= 0 ? "" : "-"}${Math.abs(value).toFixed(2)}%`;
+  }
+
+  function formatSignedPercent(value) {
+    if (!Number.isFinite(value)) return "-";
+    return `${value >= 0 ? "+" : "-"}${Math.abs(value).toFixed(2)}%`;
   }
 
   function shortMoney(value) {

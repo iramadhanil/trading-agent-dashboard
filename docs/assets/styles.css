@@ -291,13 +291,13 @@ h3 {
   z-index: 5;
   display: flex;
   gap: 8px;
-  padding: 12px 2px 18px;
+  padding: 12px 10px 18px;
   overflow-x: auto;
   background:
     linear-gradient(180deg, rgba(238, 243, 246, 0.98), rgba(238, 243, 246, 0.82));
   backdrop-filter: blur(18px);
   scrollbar-width: none;
-  scroll-padding-inline: 2px;
+  scroll-padding-inline: 10px;
 }
 
 .tabs::-webkit-scrollbar {
@@ -521,7 +521,7 @@ main {
 
 .cockpit-grid {
   display: grid;
-  grid-template-columns: 1.08fr 1.42fr 1fr 1fr;
+  grid-template-columns: minmax(300px, 0.95fr) minmax(0, 1.35fr) minmax(0, 1.35fr) minmax(300px, 0.95fr);
   gap: 12px;
   align-items: stretch;
   min-width: 0;
@@ -532,6 +532,7 @@ main {
   min-height: 286px;
   display: grid;
   gap: 14px;
+  min-width: 0;
   border: 1px solid rgba(193, 206, 220, 0.9);
   border-radius: var(--radius);
   padding: 18px;
@@ -549,6 +550,20 @@ main {
     linear-gradient(150deg, #111c2d 0%, #132238 58%, #0b554d 100%);
   color: #f7fbff;
   box-shadow: 0 20px 48px rgba(15, 27, 44, 0.22);
+}
+
+.visual-card-dark .donut-layout {
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
+.visual-card-dark .donut-host {
+  width: min(100%, 270px);
+  justify-self: center;
+}
+
+.visual-card-dark .visual-stat-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .visual-card-dark h2,
@@ -586,6 +601,7 @@ main {
   position: relative;
   display: block;
   width: 100%;
+  max-width: 100%;
   min-height: 210px;
   overflow: hidden;
   contain: layout paint;
@@ -633,11 +649,13 @@ main {
 .visual-stat-list {
   display: grid;
   gap: 9px;
+  min-width: 0;
 }
 
 .visual-stat-list div {
   display: grid;
   gap: 3px;
+  min-width: 0;
   padding: 10px 11px;
   border: 1px solid rgba(193, 206, 220, 0.58);
   border-radius: var(--radius);
@@ -659,8 +677,9 @@ main {
 .visual-stat-list strong {
   color: #132033;
   font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 17px;
+  font-size: clamp(14px, 1.2vw, 17px);
   line-height: 1.1;
+  overflow-wrap: anywhere;
 }
 
 .heatmap {
@@ -1018,6 +1037,23 @@ textarea {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
+.entry-preview {
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  border: 1px solid rgba(13, 116, 107, 0.2);
+  border-radius: var(--radius);
+  padding: 12px 13px;
+  background:
+    linear-gradient(135deg, rgba(224, 245, 236, 0.82), rgba(229, 238, 252, 0.74));
+  color: #173d4f;
+  font-size: 13px;
+  font-weight: 780;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.84),
+    0 12px 24px rgba(24, 42, 64, 0.06);
+}
+
 textarea {
   resize: vertical;
 }
@@ -1241,7 +1277,7 @@ tbody tr:last-child td {
 
 .coach-metrics {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -1324,6 +1360,25 @@ tbody tr:last-child td {
   width: 17px;
   height: 17px;
   margin-top: 2px;
+}
+
+.coach-principles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.coach-principles span {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(193, 206, 220, 0.68);
+  border-radius: 999px;
+  padding: 7px 11px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #334b64;
+  font-size: 12px;
+  font-weight: 820;
 }
 
 .coach-action.do .coach-chip svg {
@@ -1465,7 +1520,8 @@ tbody tr:last-child td {
   .layout-two,
   .scenario-grid,
   .research-grid,
-  .coach-action-grid {
+  .coach-action-grid,
+  .coach-metrics {
     grid-template-columns: 1fr;
   }
 }
@@ -1500,10 +1556,10 @@ tbody tr:last-child td {
 
   .tabs {
     margin-inline: 0;
-    padding: 10px 0 14px;
+    padding: 10px 8px 14px;
     gap: 7px;
     scroll-snap-type: x proximity;
-    scroll-padding-inline: 0;
+    scroll-padding-inline: 8px;
   }
 
   .tab-button {
@@ -1549,6 +1605,10 @@ tbody tr:last-child td {
 
   .donut-layout,
   .compact-donut {
+    grid-template-columns: 1fr;
+  }
+
+  .visual-card-dark .visual-stat-list {
     grid-template-columns: 1fr;
   }
 

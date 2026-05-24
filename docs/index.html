@@ -14,12 +14,12 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Inter:wght@500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="assets/styles.css?v=20260524-final-polish" />
+    <link rel="stylesheet" href="assets/styles.css?v=20260524-adaptive-tracker" />
     <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script defer src="assets/echarts.min.js?v=20260524-final-polish"></script>
-    <script defer src="assets/market-data.js?v=20260524-final-polish"></script>
-    <script defer src="assets/app.js?v=20260524-final-polish"></script>
+    <script defer src="assets/echarts.min.js?v=20260524-adaptive-tracker"></script>
+    <script defer src="assets/market-data.js?v=20260524-adaptive-tracker"></script>
+    <script defer src="assets/app.js?v=20260524-adaptive-tracker"></script>
   </head>
   <body>
     <div class="app-shell">
@@ -46,9 +46,6 @@
         </button>
         <button class="tab-button" type="button" data-tab="calendar">
           <i data-lucide="calendar-clock"></i><span>Calendar</span>
-        </button>
-        <button class="tab-button" type="button" data-tab="risk">
-          <i data-lucide="activity"></i><span>Risk lab</span>
         </button>
         <button class="tab-button" type="button" data-tab="research">
           <i data-lucide="book-open-check"></i><span>Research</span>
@@ -131,28 +128,28 @@
               <div id="runwayChart" class="chart-host visual-chart" role="img" aria-label="Projected runway curve"></div>
             </section>
 
-            <section class="visual-card">
+            <section class="visual-card adjustment-card">
               <div class="panel-title">
                 <div>
-                  <p class="eyebrow">Risk budget</p>
-                  <h2>Exposure control</h2>
+                  <p class="eyebrow">Realtime tracker</p>
+                  <h2>Target adjustment</h2>
                 </div>
-                <span class="status-pill warning" id="riskBudgetPill">Manual</span>
+                <span class="status-pill warning" id="riskBudgetPill">Baseline</span>
               </div>
               <div class="donut-layout compact-donut">
-                <div id="riskDonutChart" class="chart-host donut-host" role="img" aria-label="Risk budget donut"></div>
+                <div id="riskDonutChart" class="chart-host donut-host" role="img" aria-label="Target adjustment donut"></div>
                 <div class="visual-stat-list">
                   <div>
-                    <span>Daily stop</span>
-                    <strong id="riskDailyStop">$19.20</strong>
+                    <span>Baseline target</span>
+                    <strong id="riskDailyStop">5.00%</strong>
                   </div>
                   <div>
-                    <span>Risk/trade</span>
-                    <strong id="riskPerTrade">$6.40</strong>
+                    <span>Required now</span>
+                    <strong id="riskPerTrade">5.00%</strong>
                   </div>
                   <div>
-                    <span>Trade cap</span>
-                    <strong id="riskTradeCap">3</strong>
+                    <span>Adjustment</span>
+                    <strong id="riskTradeCap">0.00%</strong>
                   </div>
                 </div>
               </div>
@@ -327,24 +324,8 @@
                   <input id="entryDate" type="date" required />
                 </label>
                 <label>
-                  Start equity
-                  <input id="entryStart" type="number" min="0" step="0.01" inputmode="decimal" />
-                </label>
-                <label>
-                  End equity
-                  <input id="entryEnd" type="number" min="0" step="0.01" inputmode="decimal" />
-                </label>
-                <label>
-                  Return %
-                  <input id="entryReturn" type="number" step="0.01" inputmode="decimal" />
-                </label>
-                <label>
-                  Trades
-                  <input id="entryTrades" type="number" min="0" step="1" />
-                </label>
-                <label>
-                  Wins
-                  <input id="entryWins" type="number" min="0" step="1" />
+                  Daily return %
+                  <input id="entryReturn" type="number" step="0.01" inputmode="decimal" placeholder="contoh: 5 atau -2.4" required />
                 </label>
                 <label>
                   Setup grade
@@ -394,20 +375,24 @@
                     placeholder="contoh: late entry, no stop, overtrade"
                   />
                 </label>
+                <div class="entry-preview wide" id="entryPreview">
+                  Input return harian untuk melihat equity dan target baru secara otomatis.
+                </div>
                 <label class="wide">
-                  Notes
+                  Journal notes
                   <textarea id="entryNotes" rows="3" placeholder="Apa yang benar, apa yang harus dihentikan?"></textarea>
                 </label>
                 <label class="wide">
-                  Plan tomorrow
-                  <textarea id="entryPlan" rows="3" placeholder="Setup yang boleh diambil besok, dan kondisi no-trade."></textarea>
+                  Do next session
+                  <textarea id="entryNextDo" rows="3" placeholder="Setup atau kondisi yang boleh dieksekusi di hari bursa berikutnya."></textarea>
+                </label>
+                <label class="wide">
+                  Don't next session
+                  <textarea id="entryNextDont" rows="3" placeholder="Kesalahan, kondisi, atau impuls yang harus dihindari besok."></textarea>
                 </label>
                 <div class="form-actions wide">
                   <button class="primary" type="submit">
                     <i data-lucide="save"></i><span>Save day</span>
-                  </button>
-                  <button id="useLatestStart" type="button">
-                    <i data-lucide="corner-down-right"></i><span>Use latest equity</span>
                   </button>
                 </div>
               </form>
@@ -574,18 +559,29 @@
                 <thead>
                   <tr>
                     <th>Date</th>
-                    <th>Start</th>
-                    <th>End</th>
                     <th>Return</th>
-                    <th>Trades</th>
+                    <th>Equity</th>
+                    <th>Adjusted target</th>
                     <th>Grade</th>
                     <th>Discipline</th>
+                    <th>Journal</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody id="journalTable"></tbody>
               </table>
             </div>
+          </section>
+
+          <section class="tool-panel">
+            <div class="panel-title">
+              <div>
+                <p class="eyebrow">Next session</p>
+                <h2>Do and don'ts</h2>
+              </div>
+              <span class="status-pill" id="nextSessionPill">Waiting for log</span>
+            </div>
+            <div class="coach-action-grid" id="nextSessionPlaybook"></div>
           </section>
         </section>
 
@@ -716,104 +712,6 @@
                   <tbody id="closureTable"></tbody>
                 </table>
               </div>
-            </section>
-          </div>
-        </section>
-
-        <section class="tab-panel" data-panel="risk">
-          <div class="layout-two">
-            <section class="tool-panel">
-              <div class="panel-title">
-                <div>
-                  <p class="eyebrow">Risk engine</p>
-                  <h2>Monte Carlo survival test</h2>
-                </div>
-                <span class="status-pill" id="riskResultPill">Not run</span>
-              </div>
-              <form id="riskForm" class="form-grid compact-form">
-                <label>
-                  Win rate %
-                  <input id="riskWinRate" type="number" min="0" max="100" step="1" value="55" />
-                </label>
-                <label>
-                  Avg win / trade %
-                  <input id="riskAvgWin" type="number" min="0" step="0.1" value="2.2" />
-                </label>
-                <label>
-                  Avg loss / trade %
-                  <input id="riskAvgLoss" type="number" min="0" step="0.1" value="1.2" />
-                </label>
-                <label>
-                  Trades / day
-                  <input id="riskTradesPerDay" type="number" min="1" max="20" step="1" value="3" />
-                </label>
-                <label>
-                  Max drawdown stop %
-                  <input id="riskMaxDrawdown" type="number" min="1" max="90" step="1" value="20" />
-                </label>
-                <label>
-                  Simulated paths
-                  <input id="riskPaths" type="number" min="100" max="3000" step="100" value="1000" />
-                </label>
-                <div class="form-actions wide">
-                  <button class="primary" id="runRiskSimulation" type="button">
-                    <i data-lucide="play"></i><span>Run simulation</span>
-                  </button>
-                </div>
-              </form>
-              <div class="scenario-grid risk-output" id="riskOutput"></div>
-            </section>
-
-            <section class="tool-panel">
-              <div class="panel-title">
-                <div>
-                  <p class="eyebrow">Session planner</p>
-                  <h2>Daily permission check</h2>
-                </div>
-                <span class="status-pill" id="permissionPill">Review</span>
-              </div>
-              <form id="permissionForm" class="form-grid compact-form">
-                <label>
-                  Energy
-                  <select id="permEnergy">
-                    <option value="2">Low</option>
-                    <option value="3" selected>Normal</option>
-                    <option value="4">Good</option>
-                    <option value="5">Excellent</option>
-                  </select>
-                </label>
-                <label>
-                  Market quality
-                  <select id="permMarket">
-                    <option value="1">Crash / disorderly</option>
-                    <option value="2">Thin / choppy</option>
-                    <option value="3" selected>Mixed</option>
-                    <option value="4">Clean trend</option>
-                    <option value="5">High-quality momentum</option>
-                  </select>
-                </label>
-                <label>
-                  Catalyst quality
-                  <select id="permCatalyst">
-                    <option value="1">Weak / social hype</option>
-                    <option value="2">Unclear</option>
-                    <option value="3" selected>Decent</option>
-                    <option value="4">Strong news</option>
-                    <option value="5">Exceptional fresh catalyst</option>
-                  </select>
-                </label>
-                <label>
-                  Discipline yesterday
-                  <select id="permDiscipline">
-                    <option value="1">Rule break</option>
-                    <option value="2">Tilt risk</option>
-                    <option value="3" selected>Average</option>
-                    <option value="4">Clean</option>
-                    <option value="5">Excellent</option>
-                  </select>
-                </label>
-              </form>
-              <div class="coach-card" id="permissionCard"></div>
             </section>
           </div>
         </section>
