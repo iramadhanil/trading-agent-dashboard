@@ -14,22 +14,21 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Inter:wght@500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="assets/styles.css?v=20260524-ui-fix" />
+    <link rel="stylesheet" href="assets/styles.css?v=20260524-final-polish" />
     <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script defer src="assets/echarts.min.js?v=20260524-ui-fix"></script>
-    <script defer src="assets/market-data.js?v=20260524-ui-fix"></script>
-    <script defer src="assets/app.js?v=20260524-ui-fix"></script>
+    <script defer src="assets/echarts.min.js?v=20260524-final-polish"></script>
+    <script defer src="assets/market-data.js?v=20260524-final-polish"></script>
+    <script defer src="assets/app.js?v=20260524-final-polish"></script>
   </head>
   <body>
     <div class="app-shell">
       <header class="topbar">
-        <div>
+        <div class="brand-lockup">
           <p class="eyebrow">Personal US Stocks Performance System</p>
           <h1>Trading Control Room</h1>
         </div>
         <div class="clock-stack" aria-live="polite">
-          <span id="memoryStatus">Memory vault ready</span>
           <span id="jstClock">JST -</span>
           <span id="etClock">ET -</span>
         </div>
@@ -319,7 +318,7 @@
                   <p class="eyebrow">Daily input</p>
                   <h2>Catat trading day</h2>
                 </div>
-                <span class="status-pill" id="entryStatus">Local only</span>
+                <span class="status-pill" id="entryStatus">Ready</span>
               </div>
 
               <form id="dailyForm" class="form-grid">
@@ -468,21 +467,21 @@
             <div class="panel-title">
               <div>
                 <p class="eyebrow">Data vault</p>
-                <h2>Autosave and backup</h2>
+                <h2>Journal security</h2>
               </div>
-              <span class="status-pill positive" id="backendStatusPill">Local memory</span>
+              <span class="status-pill positive" id="backendStatusPill">Vault ready</span>
             </div>
             <div class="vault-grid">
               <article>
                 <span>Autosave</span>
-                <strong id="memoryStorageStatus">Active</strong>
+                <strong id="memoryStorageStatus">Ready</strong>
               </article>
               <article>
                 <span>Saved days</span>
                 <strong id="memoryEntryCount">0</strong>
               </article>
               <article>
-                <span>Last local save</span>
+                <span>Last save</span>
                 <strong id="memoryLastSaved">Never</strong>
               </article>
               <article>
@@ -490,8 +489,8 @@
                 <strong id="memoryCheckpointCount">0</strong>
               </article>
               <article>
-                <span>Cloud status</span>
-                <strong id="backendRemoteStatus">Local only</strong>
+                <span>Backup status</span>
+                <strong id="backendRemoteStatus">Private vault</strong>
               </article>
             </div>
             <div class="form-actions vault-actions">
@@ -508,8 +507,8 @@
             </div>
             <details class="vault-cloud">
               <summary>
-                <span>Optional cloud backup</span>
-                <span class="status-pill" id="backendUserPill">Not signed in</span>
+                <span>Secure cloud backup</span>
+                <span class="status-pill" id="backendUserPill">Private mode</span>
               </summary>
               <form id="backendForm" class="form-grid compact-form">
                 <label class="wide">
@@ -557,7 +556,7 @@
                 <strong id="backendLastSync">Never</strong>
               </div>
               <div class="coach-banner" id="backendMessage">
-                Local autosave is active. Cloud backup is optional.
+                Your journal is protected with autosave, checkpoints, export, and optional encrypted cloud backup.
               </div>
             </details>
           </section>

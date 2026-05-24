@@ -218,6 +218,7 @@
         const tab = button.dataset.tab;
         $$(".tab-button").forEach((item) => item.classList.toggle("active", item === button));
         $$("[data-panel]").forEach((panel) => panel.classList.toggle("active", panel.dataset.panel === tab));
+        button.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
         window.setTimeout(() => {
           renderCharts();
           resizeChartsSoon();
@@ -1094,16 +1095,13 @@
     const checkpoints = getLocalCheckpoints();
     const latest = getLatestEntry();
     const savedText = memoryMeta.lastSavedAt ? formatDateTimeCompact(memoryMeta.lastSavedAt) : "Not yet";
-    const statusText = storageReady ? "Local memory active" : "Storage blocked";
-    const statusLevel = storageReady ? "positive" : "danger";
 
-    setPill("#memoryStatus", statusText, statusLevel);
-    setText("#memoryStorageStatus", storageReady ? "Active" : "Blocked");
+    setText("#memoryStorageStatus", storageReady ? "Ready" : "Blocked");
     setText("#memoryEntryCount", `${state.entries.length} days`);
     setText("#memoryLastSaved", savedText);
     setText("#memoryCheckpointCount", `${checkpoints.length} saved`);
-    if (!backendConfig.url || !backendConfig.anonKey) setText("#backendRemoteStatus", "Local only");
-    setText("#entryStatus", latest ? `Saved ${formatCompactDate(latest.date)}` : "Local only");
+    if (!backendConfig.url || !backendConfig.anonKey) setText("#backendRemoteStatus", "Private vault");
+    setText("#entryStatus", latest ? `Saved ${formatCompactDate(latest.date)}` : "Ready");
   }
 
   function getLocalCheckpoints() {
@@ -1145,19 +1143,19 @@
 
   function renderBackendStatus(message, level, user) {
     const configured = Boolean(backendConfig.url && backendConfig.anonKey);
-    const statusText = configured ? (backendConfig.autoSync === "on" ? "Cloud auto-sync" : "Cloud ready") : "Local memory";
+    const statusText = configured ? (backendConfig.autoSync === "on" ? "Cloud sync on" : "Cloud ready") : "Vault ready";
     setPill("#backendStatusPill", statusText, configured ? "warning" : "positive");
     $("#backendLastSync").textContent = backendConfig.lastSyncAt ? formatDateTimeCompact(backendConfig.lastSyncAt) : "Never";
-    if (!configured) $("#backendRemoteStatus").textContent = "Local only";
+    if (!configured) $("#backendRemoteStatus").textContent = "Private vault";
     $("#backendMessage").textContent = message || (configured
       ? "Cloud backup is optional. Login via magic link, then push, pull, or merge."
-      : "Local autosave and checkpoints are active on this browser.");
+      : "Your journal is protected with autosave, checkpoints, export, and optional encrypted cloud backup.");
     if (level) {
       $("#backendMessage").className = `coach-banner ${level}`;
     } else {
       $("#backendMessage").className = "coach-banner";
     }
-    setPill("#backendUserPill", user ? user.email || "Signed in" : "Not signed in", user ? "positive" : "warning");
+    setPill("#backendUserPill", user ? user.email || "Connected" : "Private mode", user ? "positive" : "warning");
   }
 
   function getBackendClient(showAlert) {
@@ -1497,6 +1495,19 @@
         fontSize: 12,
         fontWeight: 760
       },
+      axisPointer: {
+        type: "line",
+        lineStyle: { color: "rgba(36, 95, 199, 0.34)", width: 1.2 },
+        label: {
+          borderWidth: 0,
+          borderRadius: 6,
+          padding: [4, 6],
+          backgroundColor: "rgba(18, 32, 51, 0.9)",
+          color: "#ffffff",
+          fontFamily: "JetBrains Mono, IBM Plex Mono, monospace",
+          fontSize: 10
+        }
+      },
       ...options
     };
   }
@@ -1509,6 +1520,8 @@
     const progress = clamp(current / state.settings.goal, 0, 1);
     renderEChart(element, {
       backgroundColor: "transparent",
+      animationEasing: "cubicOut",
+      animationDuration: 1000,
       tooltip: chartTooltip({
         trigger: "item",
         formatter: "{b}: {d}%"
@@ -1549,6 +1562,7 @@
           center: ["50%", "52%"],
           avoidLabelOverlap: true,
           silent: false,
+          emphasis: { scale: !compact, scaleSize: 3 },
           label: { show: false },
           labelLine: { show: false },
           itemStyle: { borderWidth: 0, borderRadius: 10 },
@@ -1579,6 +1593,8 @@
     const remaining = Math.max(0.01, 100 - dailyStop - perTrade * state.settings.maxTradesPerDay);
     renderEChart(element, {
       backgroundColor: "transparent",
+      animationEasing: "cubicOut",
+      animationDuration: 1000,
       tooltip: chartTooltip({
         trigger: "item",
         formatter: (params) => `${params.name}<br><strong>${formatPercent(params.value)}</strong>`
@@ -1623,6 +1639,7 @@
           type: "pie",
           radius: ["60%", "78%"],
           center: ["50%", "45%"],
+          emphasis: { scale: !compact, scaleSize: 3 },
           label: { show: false },
           labelLine: { show: false },
           itemStyle: { borderRadius: 8, borderColor: "#ffffff", borderWidth: 2 },
@@ -1661,6 +1678,7 @@
     renderEChart(element, {
       backgroundColor: "transparent",
       animationDuration: 800,
+      animationEasing: "cubicOut",
       tooltip: chartTooltip({
         trigger: "axis",
         valueFormatter: (value) => moneyFormat.format(value)
@@ -1693,6 +1711,15 @@
           smooth: 0.42,
           showSymbol: false,
           symbolSize: 7,
+          endLabel: {
+            show: !compact,
+            formatter: (params) => shortMoney(params.value[1]),
+            color: "#0b6b55",
+            fontFamily: "JetBrains Mono",
+            fontSize: 12,
+            fontWeight: 800
+          },
+          emphasis: { focus: "series" },
           data: points.map((point) => [point.day, point.value]),
           lineStyle: {
             width: 4,
@@ -1782,6 +1809,7 @@
     renderEChart(element, {
       backgroundColor: "transparent",
       animationDuration: 850,
+      animationEasing: "cubicOut",
       title: entries.length
         ? undefined
         : {
@@ -1835,7 +1863,8 @@
           connectNulls: false,
           data: actualSeries,
           lineStyle: { width: 3.4, color: "#0b8f69", shadowBlur: 10, shadowColor: "rgba(11, 143, 105, 0.24)" },
-          itemStyle: { color: "#0b8f69", borderColor: "#ffffff", borderWidth: 2 }
+          itemStyle: { color: "#0b8f69", borderColor: "#ffffff", borderWidth: 2 },
+          emphasis: { focus: "series" }
         },
         {
           name: "Projected path",
@@ -1844,7 +1873,7 @@
           symbol: "none",
           connectNulls: true,
           data: projectionSeries,
-          lineStyle: { width: 3, type: "dashed", color: "#245fc7" },
+          lineStyle: { width: 3, type: "dashed", color: "#245fc7", shadowBlur: 8, shadowColor: "rgba(36, 95, 199, 0.2)" },
           areaStyle: {
             color: chartGradient(0, 0, 0, 1, [
               { offset: 0, color: "rgba(36, 95, 199, 0.22)" },
@@ -1870,6 +1899,7 @@
     renderEChart(element, {
       backgroundColor: "transparent",
       animationDuration: 750,
+      animationEasing: "cubicOut",
       title: preview
         ? {
             text: "Target return preview",
@@ -1922,8 +1952,18 @@
           })),
           markLine: {
             symbol: "none",
-            lineStyle: { color: "rgba(102, 117, 138, 0.45)", width: 1 },
-            data: [{ yAxis: 0 }]
+            label: {
+              color: "#53657b",
+              fontFamily: "Inter",
+              fontSize: 10,
+              fontWeight: 800,
+              formatter: (params) => (params.data?.name ? params.data.name : "")
+            },
+            lineStyle: { color: "rgba(102, 117, 138, 0.42)", width: 1 },
+            data: [
+              { yAxis: 0, name: "" },
+              { yAxis: state.settings.targetDailyReturn, name: compact ? "" : "target" }
+            ]
           }
         }
       ]
@@ -2557,6 +2597,7 @@
 
   function setPill(selector, text, level) {
     const pill = $(selector);
+    if (!pill) return;
     pill.textContent = text;
     pill.classList.remove("positive", "warning", "danger");
     if (level) pill.classList.add(level);

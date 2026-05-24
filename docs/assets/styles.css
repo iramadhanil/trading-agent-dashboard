@@ -32,6 +32,7 @@
 
 html {
   min-width: 320px;
+  overflow-x: hidden;
   background: var(--bg);
 }
 
@@ -168,25 +169,56 @@ a {
 }
 
 .app-shell {
-  width: min(1480px, 100%);
+  width: min(1440px, 100%);
   margin: 0 auto;
-  padding: 20px 24px 32px;
+  overflow-x: clip;
+  padding: clamp(16px, 2vw, 28px) clamp(16px, 3vw, 36px) 36px;
 }
 
 .topbar {
-  min-height: 116px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
+  position: relative;
+  min-height: clamp(136px, 17vw, 174px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
   gap: 18px;
   margin-bottom: 14px;
-  padding: 24px;
-  border: 1px solid rgba(193, 206, 220, 0.82);
+  padding: clamp(22px, 3vw, 34px);
+  overflow: hidden;
+  border: 1px solid rgba(178, 198, 216, 0.72);
   border-radius: var(--radius);
   background:
-    linear-gradient(135deg, rgba(13, 22, 36, 0.98), rgba(20, 39, 55, 0.94) 48%, rgba(18, 93, 79, 0.9)),
-    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 18px);
+    linear-gradient(132deg, rgba(11, 19, 32, 0.99), rgba(21, 39, 58, 0.96) 52%, rgba(20, 104, 87, 0.94));
   box-shadow: 0 24px 64px rgba(20, 31, 48, 0.2);
+}
+
+.topbar::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.7), transparent 78%);
+  opacity: 0.62;
+  pointer-events: none;
+}
+
+.topbar::after {
+  position: absolute;
+  inset: auto 0 0;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, #4df0b7, #245fc7, #d7a03b);
+  opacity: 0.92;
+  pointer-events: none;
+}
+
+.brand-lockup,
+.clock-stack {
+  position: relative;
+  z-index: 1;
 }
 
 .eyebrow {
@@ -207,9 +239,11 @@ p {
 h1 {
   margin-bottom: 0;
   color: #f8fbff;
-  font-size: 44px;
-  font-weight: 850;
+  max-width: 900px;
+  font-size: clamp(34px, 4.6vw, 58px);
+  font-weight: 880;
   line-height: 1.02;
+  text-wrap: balance;
 }
 
 h2 {
@@ -247,12 +281,6 @@ h3 {
   white-space: nowrap;
 }
 
-#memoryStatus {
-  border-color: rgba(67, 240, 183, 0.22);
-  background: rgba(224, 245, 236, 0.12);
-  color: #c9fff1;
-}
-
 .topbar .eyebrow {
   color: #a9c8c3;
 }
@@ -263,10 +291,10 @@ h3 {
   z-index: 5;
   display: flex;
   gap: 8px;
-  padding: 10px 2px 16px;
+  padding: 12px 2px 18px;
   overflow-x: auto;
   background:
-    linear-gradient(180deg, rgba(238, 243, 246, 0.96), rgba(238, 243, 246, 0.78));
+    linear-gradient(180deg, rgba(238, 243, 246, 0.98), rgba(238, 243, 246, 0.82));
   backdrop-filter: blur(18px);
   scrollbar-width: none;
   scroll-padding-inline: 2px;
@@ -283,13 +311,18 @@ h3 {
     linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 251, 253, 0.86));
   color: #42546b;
   font-weight: 740;
+  box-shadow:
+    0 8px 20px rgba(24, 42, 64, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .tab-button.active {
   border-color: rgba(13, 116, 107, 0.42);
-  background: linear-gradient(135deg, #ffffff, #e7f6f1);
+  background: linear-gradient(180deg, #ffffff, #edf8f3);
   color: #075d56;
-  box-shadow: 0 9px 20px rgba(11, 143, 105, 0.12);
+  box-shadow:
+    0 14px 28px rgba(11, 143, 105, 0.14),
+    inset 0 2px 0 rgba(11, 143, 105, 0.72);
 }
 
 main {
@@ -506,7 +539,7 @@ main {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 250, 252, 0.92));
   box-shadow:
-    0 16px 40px rgba(28, 44, 64, 0.08),
+    0 18px 42px rgba(28, 44, 64, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.92);
 }
 
@@ -564,8 +597,13 @@ main {
   border: 1px solid rgba(193, 206, 220, 0.72);
   border-radius: var(--radius);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(244, 248, 251, 0.7));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(245, 249, 252, 0.82)),
+    linear-gradient(rgba(36, 95, 199, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(36, 95, 199, 0.035) 1px, transparent 1px);
+  background-size: auto, 46px 46px, 46px 46px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(193, 206, 220, 0.45);
 }
 
 .donut-host {
@@ -901,10 +939,13 @@ main {
   border: 1px solid rgba(193, 206, 220, 0.88);
   border-radius: var(--radius);
   background:
-    linear-gradient(180deg, rgba(252, 254, 255, 0.92), rgba(244, 248, 251, 0.82));
+    linear-gradient(180deg, rgba(252, 254, 255, 0.94), rgba(245, 249, 252, 0.86)),
+    linear-gradient(rgba(36, 95, 199, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(36, 95, 199, 0.028) 1px, transparent 1px);
+  background-size: auto, 52px 52px, 52px 52px;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 10px 22px rgba(28, 44, 64, 0.04);
+    0 12px 26px rgba(28, 44, 64, 0.06);
 }
 
 .chart.compact {
@@ -1431,17 +1472,20 @@ tbody tr:last-child td {
 
 @media (max-width: 760px) {
   .app-shell {
-    padding: 14px;
+    padding: 14px 16px 28px;
   }
 
   .topbar {
     display: grid;
+    grid-template-columns: 1fr;
+    min-height: 174px;
     align-items: start;
-    padding: 18px;
+    padding: 20px 18px;
   }
 
   .clock-stack {
     min-width: 0;
+    margin-top: 14px;
     text-align: left;
   }
 
@@ -1450,14 +1494,16 @@ tbody tr:last-child td {
   }
 
   h1 {
-    font-size: 29px;
+    font-size: 34px;
+    line-height: 1.04;
   }
 
   .tabs {
     margin-inline: 0;
-    padding: 10px 2px 14px;
+    padding: 10px 0 14px;
     gap: 7px;
     scroll-snap-type: x proximity;
+    scroll-padding-inline: 0;
   }
 
   .tab-button {
@@ -1566,6 +1612,14 @@ tbody tr:last-child td {
 }
 
 @media (max-width: 520px) {
+  .topbar {
+    min-height: 176px;
+  }
+
+  h1 {
+    font-size: 32px;
+  }
+
   .chart {
     height: 300px;
     min-height: 300px;
