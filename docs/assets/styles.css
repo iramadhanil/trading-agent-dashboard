@@ -327,7 +327,7 @@ h3 {
 
 main {
   display: grid;
-  gap: 14px;
+  gap: 12px;
   min-width: 0;
 }
 
@@ -338,7 +338,7 @@ main {
 
 .tab-panel.active {
   display: grid;
-  gap: 14px;
+  gap: 12px;
   align-items: start;
 }
 
@@ -578,7 +578,7 @@ main {
   display: grid;
   grid-template-columns: minmax(300px, 0.95fr) minmax(0, 1.35fr) minmax(0, 1.35fr) minmax(300px, 0.95fr);
   gap: 10px;
-  align-items: start;
+  align-items: stretch;
   min-width: 0;
 }
 
@@ -618,7 +618,11 @@ main {
 }
 
 .visual-card-dark .visual-stat-list {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.visual-card-dark .visual-stat-list div:first-child {
+  grid-column: 1 / -1;
 }
 
 .visual-card-dark h2,
@@ -832,9 +836,19 @@ main {
 .layout-two {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
-  gap: 14px;
+  gap: 12px;
   align-items: start;
   min-width: 0;
+}
+
+.overview-runway-grid {
+  grid-template-columns: minmax(0, 1.44fr) minmax(360px, 0.86fr);
+  align-items: stretch;
+}
+
+.overview-runway-grid > .tool-panel {
+  height: 100%;
+  min-height: 0;
 }
 
 .tool-panel {
@@ -846,6 +860,7 @@ main {
 
 .hero-panel {
   grid-template-columns: minmax(300px, 0.46fr) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   align-items: start;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 253, 0.94));
@@ -878,6 +893,22 @@ main {
 .hero-panel .chart {
   height: 268px;
   min-height: 268px;
+}
+
+.overview-runway-grid .hero-panel .chart {
+  height: 100%;
+  min-height: clamp(300px, 25vw, 390px);
+  align-self: stretch;
+}
+
+.overview-runway-grid .market-panel {
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+}
+
+.overview-runway-grid .market-panel .chart.compact {
+  height: 100%;
+  min-height: clamp(220px, 18vw, 290px);
+  align-self: stretch;
 }
 
 .market-panel {
@@ -1613,6 +1644,24 @@ tbody tr:last-child td {
   .coach-metrics {
     grid-template-columns: 1fr;
   }
+
+  .overview-runway-grid {
+    align-items: start;
+  }
+
+  .overview-runway-grid > .tool-panel {
+    height: auto;
+  }
+
+  .overview-runway-grid .hero-panel .chart {
+    height: 286px;
+    min-height: 286px;
+  }
+
+  .overview-runway-grid .market-panel .chart.compact {
+    height: 220px;
+    min-height: 220px;
+  }
 }
 
 @media (max-width: 760px) {
@@ -1745,6 +1794,16 @@ tbody tr:last-child td {
     min-height: 218px;
   }
 
+  .overview-runway-grid .hero-panel .chart {
+    height: 272px;
+    min-height: 272px;
+  }
+
+  .overview-runway-grid .market-panel .chart.compact {
+    height: 208px;
+    min-height: 208px;
+  }
+
   .visual-chart {
     height: 280px;
     min-height: 280px;
@@ -1788,6 +1847,16 @@ tbody tr:last-child td {
   .chart.compact {
     height: 208px;
     min-height: 208px;
+  }
+
+  .overview-runway-grid .hero-panel .chart {
+    height: 258px;
+    min-height: 258px;
+  }
+
+  .overview-runway-grid .market-panel .chart.compact {
+    height: 198px;
+    min-height: 198px;
   }
 
   .visual-chart {

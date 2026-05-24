@@ -1715,8 +1715,8 @@
       grid: { left: compact ? 42 : 60, right: compact ? 22 : 48, top: compact ? 18 : 26, bottom: compact ? 30 : 38 },
       xAxis: {
         type: "value",
-        name: compact ? "" : "sessions",
-        nameGap: 22,
+        name: "",
+        nameGap: 0,
         min: 0,
         max: days,
         axisLine: { lineStyle: { color: "#c4d0dd" } },
