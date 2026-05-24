@@ -263,12 +263,13 @@ h3 {
   z-index: 5;
   display: flex;
   gap: 8px;
-  padding: 10px 0 16px;
+  padding: 10px 2px 16px;
   overflow-x: auto;
   background:
     linear-gradient(180deg, rgba(238, 243, 246, 0.96), rgba(238, 243, 246, 0.78));
   backdrop-filter: blur(18px);
   scrollbar-width: none;
+  scroll-padding-inline: 2px;
 }
 
 .tabs::-webkit-scrollbar {
@@ -342,9 +343,7 @@ main {
   border: 1px solid rgba(189, 203, 218, 0.82);
   border-radius: var(--radius);
   background:
-    linear-gradient(150deg, rgba(255, 255, 255, 0.98) 0%, rgba(249, 252, 253, 0.92) 58%, rgba(236, 244, 247, 0.72) 100%),
-    radial-gradient(circle at 18% 0%, rgba(67, 240, 183, 0.08), transparent 36%),
-    radial-gradient(circle at 100% 24%, rgba(36, 95, 199, 0.07), transparent 34%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 253, 0.94) 100%);
   box-shadow: var(--shadow-card);
   transition:
     transform 0.18s ease,
@@ -392,12 +391,14 @@ main {
 .metric-card::after {
   position: absolute;
   top: 0;
-  right: -42px;
-  width: 118px;
+  right: 0;
+  width: 38%;
   height: 100%;
   content: "";
-  background: linear-gradient(110deg, transparent, rgba(255, 255, 255, 0.62), transparent);
-  transform: skewX(-18deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.38));
+  opacity: 0.45;
+  transform: none;
+  pointer-events: none;
 }
 
 .metric-top {
@@ -444,8 +445,7 @@ main {
 
 .insight-panel {
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.97), rgba(247, 251, 252, 0.9)),
-    repeating-linear-gradient(90deg, rgba(13, 116, 107, 0.025) 0 1px, transparent 1px 24px);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 251, 252, 0.92));
 }
 
 .insight-grid,
@@ -504,8 +504,7 @@ main {
   padding: 18px;
   overflow: hidden;
   background:
-    linear-gradient(150deg, rgba(255, 255, 255, 0.98), rgba(247, 250, 252, 0.9) 58%, rgba(229, 238, 252, 0.54)),
-    repeating-linear-gradient(90deg, rgba(36, 95, 199, 0.026) 0 1px, transparent 1px 22px);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 250, 252, 0.92));
   box-shadow:
     0 16px 40px rgba(28, 44, 64, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.92);
@@ -514,8 +513,7 @@ main {
 .visual-card-dark {
   border-color: rgba(16, 29, 47, 0.86);
   background:
-    linear-gradient(145deg, #111c2d 0%, #15273b 54%, #0d554c 100%),
-    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 20px);
+    linear-gradient(150deg, #111c2d 0%, #132238 58%, #0b554d 100%);
   color: #f7fbff;
   box-shadow: 0 20px 48px rgba(15, 27, 44, 0.22);
 }
@@ -580,7 +578,6 @@ main {
   min-height: 202px;
 }
 
-.chart-host > div,
 .chart-host canvas {
   width: 100% !important;
   height: 100% !important;
@@ -701,23 +698,23 @@ main {
 }
 
 .accent-green {
-  background: linear-gradient(145deg, #ffffff 0%, #effaf5 100%);
-  border-top: 4px solid var(--green);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%);
+  border-top: 3px solid var(--green);
 }
 
 .accent-blue {
-  background: linear-gradient(145deg, #ffffff 0%, #edf3ff 100%);
-  border-top: 4px solid var(--blue);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%);
+  border-top: 3px solid var(--blue);
 }
 
 .accent-amber {
-  background: linear-gradient(145deg, #ffffff 0%, #fff6e7 100%);
-  border-top: 4px solid var(--amber);
+  background: linear-gradient(180deg, #ffffff 0%, #fdfaf5 100%);
+  border-top: 3px solid var(--amber);
 }
 
 .accent-red {
-  background: linear-gradient(145deg, #ffffff 0%, #fff0f1 100%);
-  border-top: 4px solid var(--red);
+  background: linear-gradient(180deg, #ffffff 0%, #fdf7f8 100%);
+  border-top: 3px solid var(--red);
 }
 
 .layout-two {
@@ -737,12 +734,12 @@ main {
 
 .hero-panel {
   background:
-    linear-gradient(150deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 252, 253, 0.94) 62%, rgba(233, 241, 248, 0.72) 100%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 253, 0.94));
 }
 
 .market-panel {
   background:
-    linear-gradient(150deg, rgba(255, 255, 255, 0.97), rgba(255, 255, 255, 0.9) 55%, rgba(238, 234, 251, 0.68));
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 253, 0.94));
 }
 
 .panel-title {
@@ -1007,8 +1004,7 @@ textarea {
 
 .data-vault-panel {
   background:
-    linear-gradient(140deg, rgba(255, 255, 255, 0.98), rgba(244, 250, 248, 0.92) 56%, rgba(229, 238, 252, 0.52)),
-    repeating-linear-gradient(90deg, rgba(13, 116, 107, 0.026) 0 1px, transparent 1px 28px);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 250, 250, 0.94));
 }
 
 .data-vault-panel .vault-grid {
@@ -1357,8 +1353,7 @@ tbody tr:last-child td {
   gap: 8px;
   padding: 18px;
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(247, 251, 252, 0.88)),
-    repeating-linear-gradient(135deg, rgba(13, 116, 107, 0.026) 0 1px, transparent 1px 20px);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 251, 252, 0.9));
   box-shadow:
     0 14px 30px rgba(24, 42, 64, 0.07),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
@@ -1459,8 +1454,8 @@ tbody tr:last-child td {
   }
 
   .tabs {
-    margin-inline: -14px;
-    padding: 8px 14px 12px;
+    margin-inline: 0;
+    padding: 10px 2px 14px;
     gap: 7px;
     scroll-snap-type: x proximity;
   }

@@ -1480,6 +1480,27 @@
     return new window.echarts.graphic.LinearGradient(x0, y0, x1, y1, stops);
   }
 
+  function chartTooltip(options = {}, compact = false) {
+    return {
+      show: !compact,
+      confine: true,
+      appendToBody: false,
+      borderWidth: 1,
+      borderColor: "rgba(193, 206, 220, 0.78)",
+      backgroundColor: "rgba(255, 255, 255, 0.97)",
+      padding: [8, 10],
+      extraCssText:
+        "box-shadow:0 14px 34px rgba(24,42,64,.18);border-radius:8px;color:#122033;backdrop-filter:blur(10px);",
+      textStyle: {
+        color: "#122033",
+        fontFamily: "Inter, Manrope, system-ui, sans-serif",
+        fontSize: 12,
+        fontWeight: 760
+      },
+      ...options
+    };
+  }
+
   function drawPortfolioDonutChart() {
     const element = $("#portfolioDonutChart");
     if (!element) return;
@@ -1488,13 +1509,10 @@
     const progress = clamp(current / state.settings.goal, 0, 1);
     renderEChart(element, {
       backgroundColor: "transparent",
-      tooltip: {
+      tooltip: chartTooltip({
         trigger: "item",
-        formatter: "{b}: {d}%",
-        backgroundColor: "rgba(10, 18, 30, 0.92)",
-        borderWidth: 0,
-        textStyle: { color: "#f8fbff", fontFamily: "Manrope" }
-      },
+        formatter: "{b}: {d}%"
+      }, compact),
       graphic: [
         {
           type: "text",
@@ -1561,13 +1579,10 @@
     const remaining = Math.max(0.01, 100 - dailyStop - perTrade * state.settings.maxTradesPerDay);
     renderEChart(element, {
       backgroundColor: "transparent",
-      tooltip: {
+      tooltip: chartTooltip({
         trigger: "item",
-        formatter: (params) => `${params.name}<br><strong>${formatPercent(params.value)}</strong>`,
-        backgroundColor: "rgba(17, 28, 45, 0.94)",
-        borderWidth: 0,
-        textStyle: { color: "#f8fbff", fontFamily: "Manrope" }
-      },
+        formatter: (params) => `${params.name}<br><strong>${formatPercent(params.value)}</strong>`
+      }, compact),
       legend: {
         bottom: 0,
         icon: "roundRect",
@@ -1646,13 +1661,10 @@
     renderEChart(element, {
       backgroundColor: "transparent",
       animationDuration: 800,
-      tooltip: {
+      tooltip: chartTooltip({
         trigger: "axis",
-        backgroundColor: "rgba(17, 28, 45, 0.94)",
-        borderWidth: 0,
-        textStyle: { color: "#f8fbff", fontFamily: "Manrope" },
         valueFormatter: (value) => moneyFormat.format(value)
-      },
+      }, compact),
       grid: { left: compact ? 46 : 64, right: compact ? 18 : 28, top: compact ? 24 : 30, bottom: compact ? 34 : 42 },
       xAxis: {
         type: "value",
@@ -1780,13 +1792,10 @@
             textStyle: { color: "#25384f", fontFamily: "Manrope", fontSize: compact ? 11 : 13, fontWeight: 850 },
             subtextStyle: { color: "#7a899d", fontFamily: "Manrope", fontSize: compact ? 10 : 12, fontWeight: 650 }
           },
-      tooltip: {
+      tooltip: chartTooltip({
         trigger: "axis",
-        backgroundColor: "rgba(17, 28, 45, 0.94)",
-        borderWidth: 0,
-        textStyle: { color: "#f8fbff", fontFamily: "Manrope" },
         valueFormatter: (value) => (value == null ? "-" : moneyFormat.format(value))
-      },
+      }, compact),
       legend: {
         top: compact ? 6 : 10,
         right: compact ? 8 : 14,
@@ -1871,13 +1880,10 @@
             subtextStyle: { color: "#7a899d", fontFamily: "Manrope", fontSize: compact ? 10 : 11, fontWeight: 650 }
           }
         : undefined,
-      tooltip: {
+      tooltip: chartTooltip({
         trigger: "axis",
-        backgroundColor: "rgba(17, 28, 45, 0.94)",
-        borderWidth: 0,
-        textStyle: { color: "#f8fbff", fontFamily: "Manrope" },
         valueFormatter: (value) => formatPercent(value)
-      },
+      }, compact),
       grid: { left: compact ? 36 : 42, right: compact ? 12 : 18, top: preview ? (compact ? 68 : 58) : 18, bottom: 32 },
       xAxis: {
         type: "category",
