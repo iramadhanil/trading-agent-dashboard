@@ -10,16 +10,17 @@
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23132033'/%3E%3Cpath d='M14 42h8V28h8v14h8V20h8v22h4' stroke='%234df0b7' stroke-width='5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
     <link
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Inter:wght@500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="assets/styles.css?v=20260524-adaptive-tracker" />
+    <link rel="stylesheet" href="assets/styles.css?v=20260524-control-loop" />
     <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script defer src="assets/echarts.min.js?v=20260524-adaptive-tracker"></script>
-    <script defer src="assets/market-data.js?v=20260524-adaptive-tracker"></script>
-    <script defer src="assets/app.js?v=20260524-adaptive-tracker"></script>
+    <script defer src="assets/echarts.min.js?v=20260524-control-loop"></script>
+    <script defer src="assets/market-data.js?v=20260524-control-loop"></script>
+    <script defer src="assets/app.js?v=20260524-control-loop"></script>
   </head>
   <body>
     <div class="app-shell">
@@ -202,6 +203,32 @@
             </div>
             <div class="coach-banner" id="edgeInsight">
               Start logging daily results to activate performance intelligence.
+            </div>
+            <div class="adaptive-grid" id="adaptiveGrid">
+              <article>
+                <span>Required now</span>
+                <strong id="adaptiveRequired">5.00%</strong>
+                <small id="adaptiveRequiredSub">Baseline 5.00%</small>
+              </article>
+              <article>
+                <span>Actual pace</span>
+                <strong id="adaptiveActual">-</strong>
+                <small id="adaptiveActualSub">Waiting for logs</small>
+              </article>
+              <article>
+                <span>Plan drift</span>
+                <strong id="adaptiveDrift">0 sessions</strong>
+                <small id="adaptiveDriftSub">On schedule</small>
+              </article>
+              <article>
+                <span>5-session ask</span>
+                <strong id="adaptiveFiveDay">27.63%</strong>
+                <small id="adaptiveFiveDaySub">Compounded</small>
+              </article>
+            </div>
+            <div class="pressure-track" aria-label="Adaptive plan pressure">
+              <span id="pressureTarget"></span>
+              <i id="pressureActual"></i>
             </div>
           </section>
 
@@ -582,6 +609,17 @@
               <span class="status-pill" id="nextSessionPill">Waiting for log</span>
             </div>
             <div class="coach-action-grid" id="nextSessionPlaybook"></div>
+          </section>
+
+          <section class="tool-panel">
+            <div class="panel-title">
+              <div>
+                <p class="eyebrow">Journal intelligence</p>
+                <h2>Setup feedback loop</h2>
+              </div>
+              <span class="status-pill" id="journalFeedbackPill">Learning</span>
+            </div>
+            <div class="journal-feedback-grid" id="journalFeedbackGrid"></div>
           </section>
         </section>
 

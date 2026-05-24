@@ -488,8 +488,17 @@ main {
   gap: 12px;
 }
 
+.adaptive-grid,
+.journal-feedback-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .insight-grid article,
-.vault-grid article {
+.vault-grid article,
+.adaptive-grid article,
+.journal-feedback-grid article {
   min-height: 86px;
   display: grid;
   align-content: space-between;
@@ -503,7 +512,9 @@ main {
 
 .insight-grid span,
 .vault-grid span,
-.vault-sync-row span {
+.vault-sync-row span,
+.adaptive-grid span,
+.journal-feedback-grid span {
   color: var(--muted);
   font-size: 11px;
   font-weight: 850;
@@ -512,11 +523,55 @@ main {
 
 .insight-grid strong,
 .vault-grid strong,
-.vault-sync-row strong {
+.vault-sync-row strong,
+.adaptive-grid strong,
+.journal-feedback-grid strong {
   color: #101d2f;
   font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 22px;
   line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.adaptive-grid small,
+.journal-feedback-grid small {
+  color: #65778c;
+  font-size: 12px;
+  font-weight: 720;
+  line-height: 1.3;
+}
+
+.pressure-track {
+  position: relative;
+  height: 12px;
+  border: 1px solid rgba(193, 206, 220, 0.72);
+  border-radius: 999px;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(189, 57, 74, 0.34), rgba(181, 106, 0, 0.22) 38%, rgba(11, 143, 105, 0.36) 72%, rgba(36, 95, 199, 0.32));
+  box-shadow: inset 0 1px 2px rgba(24, 42, 64, 0.12);
+}
+
+.pressure-track span,
+.pressure-track i {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+}
+
+.pressure-track span {
+  border: 2px solid #ffffff;
+  background: #245fc7;
+  box-shadow: 0 0 0 3px rgba(36, 95, 199, 0.16);
+}
+
+.pressure-track i {
+  border: 2px solid #102033;
+  background: #4df0b7;
+  box-shadow: 0 0 0 3px rgba(11, 143, 105, 0.16);
 }
 
 .cockpit-grid {
@@ -1503,6 +1558,8 @@ tbody tr:last-child td {
   }
 
   .insight-grid,
+  .adaptive-grid,
+  .journal-feedback-grid,
   .vault-grid,
   .data-vault-panel .vault-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1591,6 +1648,8 @@ tbody tr:last-child td {
 
   .metric-grid,
   .insight-grid,
+  .adaptive-grid,
+  .journal-feedback-grid,
   .vault-grid,
   .data-vault-panel .vault-grid,
   .cockpit-grid,

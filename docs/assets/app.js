@@ -346,9 +346,13 @@
     const adjusted = Number.isFinite(targetPlan.requiredRate)
       ? formatPercent(targetPlan.requiredRate * 100)
       : "Need recovery";
+    const baselineDays = daysToReach(end, state.settings.goal, state.settings.targetDailyReturn / 100);
+    const impact = Number.isFinite(baselineDays) && Number.isFinite(targetPlan.remainingPlanSessions)
+      ? formatPlanDrift(baselineDays - targetPlan.remainingPlanSessions)
+      : "Recovery";
     setText(
       "#entryPreview",
-      `${formatPercent(returnPct)} -> ${moneyFormat.format(end)} equity. Adjusted daily target: ${adjusted}.`
+      `${formatPercent(returnPct)} -> ${moneyFormat.format(end)} equity. Required pace ${adjusted}. Plan drift ${impact}.`
     );
   }
 
@@ -514,6 +518,7 @@
     renderMetricsAndProjection();
     renderJournal();
     renderNextSessionPlaybook();
+    renderJournalFeedback();
     renderCoach();
     renderCalendar();
     renderPerformanceInsights();
@@ -577,6 +582,7 @@
       : "Goal reached";
     $("#projectionSummary").textContent = projection.summary;
     renderCockpitStats(latestCapital, projection, progress, adjustment);
+    renderAdaptivePlan(projection, adjustment);
 
     renderMilestones(projection.rate, projection.firstSession);
   }
@@ -688,6 +694,33 @@
     refreshIcons();
   }
 
+  function renderAdaptivePlan(projection, adjustment) {
+    const actualRate = getGeometricDailyReturn();
+    const hasLogs = state.entries.length > 0;
+    const baseline = state.settings.targetDailyReturn / 100;
+    const required = adjustment.requiredRate;
+    const drift = getPlanDrift(projection, adjustment);
+    const fiveSessionAsk = Number.isFinite(required) ? ((1 + required) ** 5 - 1) * 100 : Infinity;
+    const actualPct = hasLogs && Number.isFinite(actualRate) ? actualRate * 100 : NaN;
+    const requiredPct = Number.isFinite(required) ? required * 100 : NaN;
+    const maxScale = Math.max(8, state.settings.targetDailyReturn * 1.7, Math.abs(actualPct) * 1.25 || 0, requiredPct * 1.25 || 0);
+    const targetLeft = Number.isFinite(requiredPct) ? clamp((requiredPct / maxScale) * 100, 0, 100) : 100;
+    const actualLeft = Number.isFinite(actualPct) ? clamp((actualPct / maxScale) * 100, 0, 100) : targetLeft;
+    const driftLevel = !Number.isFinite(drift) || drift > 3 ? "warning" : drift < -1 ? "positive" : "positive";
+
+    setText("#adaptiveRequired", Number.isFinite(requiredPct) ? formatPercent(requiredPct) : "Recovery");
+    setText("#adaptiveRequiredSub", `Baseline ${formatPercent(state.settings.targetDailyReturn)}`);
+    setText("#adaptiveActual", hasLogs && Number.isFinite(actualPct) ? formatPercent(actualPct) : "-");
+    setText("#adaptiveActualSub", hasLogs ? `Geometric ${state.entries.length} days` : "Waiting for logs");
+    setText("#adaptiveDrift", formatPlanDrift(drift));
+    setText("#adaptiveDriftSub", drift > 0 ? "Behind baseline ETA" : drift < 0 ? "Ahead of baseline ETA" : "On schedule");
+    setText("#adaptiveFiveDay", Number.isFinite(fiveSessionAsk) ? formatPercent(fiveSessionAsk) : "Recovery");
+    setText("#adaptiveFiveDaySub", "Required compound");
+    $("#pressureTarget").style.left = `${targetLeft}%`;
+    $("#pressureActual").style.left = `${actualLeft}%`;
+    setPill("#edgeHealthPill", $("#edgeHealthPill").textContent || "Collecting data", driftLevel);
+  }
+
   function renderNextSessionPlaybook() {
     const latest = getLatestEntry();
     if (!latest) {
@@ -719,6 +752,63 @@
         ${dontItems.map((item) => `<div class="coach-chip"><i data-lucide="octagon-x"></i><span>${escapeHtml(item)}</span></div>`).join("")}
       </section>
     `;
+  }
+
+  function renderJournalFeedback() {
+    const entries = state.entries.slice(-30);
+    if (!entries.length) {
+      setPill("#journalFeedbackPill", "Learning", "warning");
+      $("#journalFeedbackGrid").innerHTML = [
+        ["Setup base", "-", "Needs logged trading days"],
+        ["Leak to fix", "-", "Mistake tags will surface here"],
+        ["Process score", "-", "Discipline trend"],
+        ["Tomorrow focus", "-", "Saved do/don'ts become the next plan"]
+      ].map(renderFeedbackCard).join("");
+      return;
+    }
+
+    const latest = getLatestEntry();
+    const bestRegime = bestGroup(entries, (entry) => entry.regime, (entry) => entry.returnPct);
+    const worstMistake = worstMistakeTag(entries);
+    const avgDiscipline = average(entries.map((entry) => numberOr(entry.discipline, 3)));
+    const avgReturn = average(entries.map((entry) => entry.returnPct));
+    const lossStreak = getLossStreak();
+    const processScore = clamp(
+      avgDiscipline * 16 +
+        Math.min(18, Math.max(-12, avgReturn * 3)) +
+        (lossStreak ? -lossStreak * 6 : 10),
+      0,
+      100
+    );
+    const level = processScore >= 72 ? "positive" : processScore >= 50 ? "warning" : "danger";
+    const focus = latest.nextDo || latest.plan || (latest.returnPct < 0
+      ? "Review loss, reduce size, wait for only A setup"
+      : "Repeat the cleanest setup condition from the last session");
+    const avoid = latest.nextDont || latest.mistakes || "Do not trade outside written conditions";
+
+    setPill("#journalFeedbackPill", `${Math.round(processScore)}/100`, level);
+    $("#journalFeedbackGrid").innerHTML = [
+      [
+        "Setup base",
+        bestRegime ? regimeLabel(bestRegime.key) : "-",
+        bestRegime ? `${bestRegime.count} days | avg ${formatPercent(bestRegime.average)}` : "Needs more samples"
+      ],
+      [
+        "Leak to fix",
+        worstMistake ? worstMistake.label : "No repeated leak",
+        worstMistake ? `${worstMistake.count}x | avg ${formatPercent(worstMistake.average)}` : "Mistake tags are clean"
+      ],
+      [
+        "Process score",
+        `${Math.round(processScore)}`,
+        `Discipline ${roundTo(avgDiscipline, 1)}/5 | streak ${lossStreak}`
+      ],
+      [
+        "Tomorrow focus",
+        focus,
+        avoid
+      ]
+    ].map(renderFeedbackCard).join("");
   }
 
   function renderCoach() {
@@ -2211,6 +2301,67 @@
       .map((item) => item.trim())
       .filter(Boolean)
       .slice(0, 4);
+  }
+
+  function renderFeedbackCard([label, value, note]) {
+    return `
+      <article>
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(String(value || "-"))}</strong>
+        <small>${escapeHtml(String(note || ""))}</small>
+      </article>
+    `;
+  }
+
+  function bestGroup(entries, keyFn, valueFn) {
+    const groups = new Map();
+    entries.forEach((entry) => {
+      const key = keyFn(entry);
+      if (!key) return;
+      const bucket = groups.get(key) || [];
+      bucket.push(valueFn(entry));
+      groups.set(key, bucket);
+    });
+    return [...groups.entries()]
+      .map(([key, values]) => ({ key, count: values.length, average: average(values) }))
+      .sort((a, b) => b.average - a.average || b.count - a.count)[0] || null;
+  }
+
+  function worstMistakeTag(entries) {
+    const groups = new Map();
+    entries.forEach((entry) => {
+      splitPlanItems(entry.mistakes).forEach((tag) => {
+        const key = tag.toLowerCase();
+        const bucket = groups.get(key) || { label: tag, returns: [] };
+        bucket.returns.push(entry.returnPct);
+        groups.set(key, bucket);
+      });
+    });
+    return [...groups.values()]
+      .map((item) => ({ label: item.label, count: item.returns.length, average: average(item.returns) }))
+      .sort((a, b) => a.average - b.average || b.count - a.count)[0] || null;
+  }
+
+  function getPlanDrift(projection, adjustment) {
+    if (!Number.isFinite(projection.days) || !Number.isFinite(adjustment.remainingPlanSessions)) return Infinity;
+    return projection.days - adjustment.remainingPlanSessions;
+  }
+
+  function formatPlanDrift(value) {
+    if (!Number.isFinite(value)) return "Recovery";
+    const rounded = Math.round(value);
+    if (rounded === 0) return "0 sessions";
+    return `${rounded > 0 ? "+" : ""}${integerFormat.format(rounded)} sessions`;
+  }
+
+  function regimeLabel(value) {
+    return {
+      trend: "Trend day",
+      range: "Range/chop",
+      gap: "Gap and fade",
+      crash: "Risk-off",
+      thin: "Thin liquidity"
+    }[value] || value;
   }
 
   function getFirstCountedSession() {
