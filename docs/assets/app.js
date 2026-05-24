@@ -1468,7 +1468,7 @@
   }
 
   function isCompactChart(element) {
-    return element.getBoundingClientRect().width < 560;
+    return element.getBoundingClientRect().width < 720;
   }
 
   function renderEChart(element, option) {
@@ -1712,7 +1712,7 @@
         trigger: "axis",
         valueFormatter: (value) => moneyFormat.format(value)
       }, compact),
-      grid: { left: compact ? 46 : 64, right: compact ? 18 : 28, top: compact ? 24 : 30, bottom: compact ? 34 : 42 },
+      grid: { left: compact ? 42 : 60, right: compact ? 22 : 48, top: compact ? 18 : 26, bottom: compact ? 30 : 38 },
       xAxis: {
         type: "value",
         name: compact ? "" : "sessions",
@@ -1790,11 +1790,12 @@
           label: {
             show: !compact,
             formatter: (params) => params.value[2],
-            position: "top",
+            position: compact ? "inside" : "top",
             color: "#53657b",
-            fontSize: 11,
+            fontSize: compact ? 9 : 11,
             fontWeight: 800,
-            fontFamily: "Manrope"
+            fontFamily: "Manrope",
+            hideOverlap: true
           }
         }
       ]
@@ -1868,29 +1869,30 @@
       title: entries.length
         ? undefined
         : {
-            text: "Projected path before first daily log",
-            subtext: "Add your first trading day to replace this preview with actual equity.",
+            text: "Projection preview",
+            subtext: "First log replaces preview with actual equity.",
             left: "center",
-            top: 18,
-            textStyle: { color: "#25384f", fontFamily: "Manrope", fontSize: compact ? 11 : 13, fontWeight: 850 },
-            subtextStyle: { color: "#7a899d", fontFamily: "Manrope", fontSize: compact ? 10 : 12, fontWeight: 650 }
+            top: 8,
+            textStyle: { color: "#25384f", fontFamily: "Manrope", fontSize: compact ? 10 : 12, fontWeight: 850 },
+            subtextStyle: { color: "#7a899d", fontFamily: "Manrope", fontSize: compact ? 9 : 11, fontWeight: 650 }
           },
       tooltip: chartTooltip({
         trigger: "axis",
         valueFormatter: (value) => (value == null ? "-" : moneyFormat.format(value))
       }, compact),
       legend: {
-        top: compact ? 6 : 10,
+        show: entries.length > 0 && !compact,
+        top: 8,
         right: compact ? 8 : 14,
         itemWidth: 18,
         itemHeight: 8,
         textStyle: { color: "#66758a", fontFamily: "Manrope", fontSize: compact ? 10 : 12, fontWeight: 760 }
       },
       grid: {
-        left: compact ? 46 : 62,
-        right: compact ? 16 : 28,
-        top: entries.length ? (compact ? 36 : 42) : compact ? 78 : 68,
-        bottom: compact ? 36 : 42
+        left: compact ? 42 : 58,
+        right: compact ? 14 : 24,
+        top: entries.length ? (compact ? 18 : 38) : compact ? 48 : 52,
+        bottom: compact ? 30 : 36
       },
       xAxis: {
         type: "category",

@@ -169,21 +169,21 @@ a {
 }
 
 .app-shell {
-  width: min(1440px, 100%);
+  width: min(1680px, 100%);
   margin: 0 auto;
   overflow-x: clip;
-  padding: clamp(16px, 2vw, 28px) clamp(16px, 3vw, 36px) 36px;
+  padding: clamp(14px, 1.7vw, 24px) clamp(14px, 2.4vw, 30px) 28px;
 }
 
 .topbar {
   position: relative;
-  min-height: clamp(136px, 17vw, 174px);
+  min-height: clamp(118px, 12vw, 152px);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
   gap: 18px;
-  margin-bottom: 14px;
-  padding: clamp(22px, 3vw, 34px);
+  margin-bottom: 10px;
+  padding: clamp(20px, 2.5vw, 30px);
   overflow: hidden;
   border: 1px solid rgba(178, 198, 216, 0.72);
   border-radius: var(--radius);
@@ -240,7 +240,7 @@ h1 {
   margin-bottom: 0;
   color: #f8fbff;
   max-width: 900px;
-  font-size: clamp(34px, 4.6vw, 58px);
+  font-size: clamp(34px, 4.2vw, 54px);
   font-weight: 880;
   line-height: 1.02;
   text-wrap: balance;
@@ -327,7 +327,7 @@ h3 {
 
 main {
   display: grid;
-  gap: 18px;
+  gap: 14px;
   min-width: 0;
 }
 
@@ -338,7 +338,7 @@ main {
 
 .tab-panel.active {
   display: grid;
-  gap: 18px;
+  gap: 14px;
   align-items: start;
 }
 
@@ -361,7 +361,7 @@ main {
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
 }
 
@@ -413,7 +413,7 @@ main {
 }
 
 .metric-card {
-  min-height: 124px;
+  min-height: 112px;
   display: grid;
   align-content: space-between;
   gap: 12px;
@@ -577,20 +577,20 @@ main {
 .cockpit-grid {
   display: grid;
   grid-template-columns: minmax(300px, 0.95fr) minmax(0, 1.35fr) minmax(0, 1.35fr) minmax(300px, 0.95fr);
-  gap: 12px;
-  align-items: stretch;
+  gap: 10px;
+  align-items: start;
   min-width: 0;
 }
 
 .visual-card {
   position: relative;
-  min-height: 286px;
+  min-height: 248px;
   display: grid;
-  gap: 14px;
+  gap: 12px;
   min-width: 0;
   border: 1px solid rgba(193, 206, 220, 0.9);
   border-radius: var(--radius);
-  padding: 18px;
+  padding: 16px;
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 250, 252, 0.92));
@@ -637,7 +637,7 @@ main {
 
 .visual-card-heatmap {
   grid-column: 1 / -1;
-  min-height: 190px;
+  min-height: 168px;
 }
 
 .donut-layout {
@@ -663,8 +663,8 @@ main {
 }
 
 .visual-chart {
-  height: 264px;
-  min-height: 264px;
+  height: 238px;
+  min-height: 238px;
   border: 1px solid rgba(193, 206, 220, 0.72);
   border-radius: var(--radius);
   background:
@@ -678,13 +678,13 @@ main {
 }
 
 .donut-host {
-  height: 218px;
-  min-height: 218px;
+  height: 198px;
+  min-height: 198px;
 }
 
 .compact-donut .donut-host {
-  height: 202px;
-  min-height: 202px;
+  height: 188px;
+  min-height: 188px;
 }
 
 .chart-host canvas {
@@ -832,21 +832,52 @@ main {
 .layout-two {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
-  gap: 18px;
-  align-items: stretch;
+  gap: 14px;
+  align-items: start;
   min-width: 0;
 }
 
 .tool-panel {
-  padding: 22px 24px;
+  padding: 18px 20px;
   display: grid;
   align-content: start;
-  gap: 18px;
+  gap: 14px;
 }
 
 .hero-panel {
+  grid-template-columns: minmax(300px, 0.46fr) minmax(0, 1fr);
+  align-items: start;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 253, 0.94));
+}
+
+.hero-panel .panel-title {
+  grid-column: 1 / -1;
+}
+
+.hero-panel .progress-wrap {
+  grid-template-columns: 136px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.hero-panel .progress-ring {
+  width: 136px;
+}
+
+.hero-panel .detail-list {
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.hero-panel .detail-list div {
+  min-height: 36px;
+  padding-top: 5px;
+}
+
+.hero-panel .chart {
+  height: 268px;
+  min-height: 268px;
 }
 
 .market-panel {
@@ -896,7 +927,7 @@ main {
 .progress-wrap {
   display: grid;
   grid-template-columns: 188px minmax(0, 1fr);
-  gap: 22px;
+  gap: 18px;
   align-items: center;
 }
 
@@ -963,7 +994,7 @@ main {
 
 .projection-copy p {
   max-width: 760px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   color: #526579;
   font-size: 14px;
   line-height: 1.35;
@@ -984,7 +1015,7 @@ main {
 }
 
 .session-grid div {
-  min-height: 80px;
+  min-height: 68px;
   border: 1px solid rgba(193, 206, 220, 0.82);
   border-radius: var(--radius);
   padding: 13px 14px;
@@ -1009,7 +1040,8 @@ main {
 .chart {
   display: block;
   width: 100%;
-  height: 316px;
+  height: 286px;
+  min-height: 286px;
   border: 1px solid rgba(193, 206, 220, 0.88);
   border-radius: var(--radius);
   background:
@@ -1023,8 +1055,8 @@ main {
 }
 
 .chart.compact {
-  height: 224px;
-  min-height: 224px;
+  height: 204px;
+  min-height: 204px;
 }
 
 .session-grid {
@@ -1591,7 +1623,7 @@ tbody tr:last-child td {
   .topbar {
     display: grid;
     grid-template-columns: 1fr;
-    min-height: 174px;
+    min-height: 154px;
     align-items: start;
     padding: 20px 18px;
   }
@@ -1643,7 +1675,7 @@ tbody tr:last-child td {
 
   .tool-panel,
   .visual-card {
-    padding: 17px;
+    padding: 15px;
   }
 
   .metric-grid,
@@ -1663,12 +1695,21 @@ tbody tr:last-child td {
   }
 
   .donut-layout,
-  .compact-donut {
+  .compact-donut,
+  .hero-panel {
     grid-template-columns: 1fr;
   }
 
   .visual-card-dark .visual-stat-list {
     grid-template-columns: 1fr;
+  }
+
+  .hero-panel .progress-wrap {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-panel .progress-ring {
+    width: min(160px, 100%);
   }
 
   .heatmap {
@@ -1695,28 +1736,28 @@ tbody tr:last-child td {
   }
 
   .chart {
-    height: 320px;
-    min-height: 320px;
+    height: 286px;
+    min-height: 286px;
   }
 
   .chart.compact {
-    height: 250px;
-    min-height: 250px;
+    height: 218px;
+    min-height: 218px;
   }
 
   .visual-chart {
-    height: 316px;
-    min-height: 316px;
+    height: 280px;
+    min-height: 280px;
   }
 
   .donut-host {
-    height: 244px;
-    min-height: 244px;
+    height: 224px;
+    min-height: 224px;
   }
 
   .compact-donut .donut-host {
-    height: 226px;
-    min-height: 226px;
+    height: 210px;
+    min-height: 210px;
   }
 
   table {
@@ -1732,7 +1773,7 @@ tbody tr:last-child td {
 
 @media (max-width: 520px) {
   .topbar {
-    min-height: 176px;
+    min-height: 150px;
   }
 
   h1 {
@@ -1740,23 +1781,23 @@ tbody tr:last-child td {
   }
 
   .chart {
-    height: 300px;
-    min-height: 300px;
+    height: 272px;
+    min-height: 272px;
   }
 
   .chart.compact {
-    height: 236px;
-    min-height: 236px;
+    height: 208px;
+    min-height: 208px;
   }
 
   .visual-chart {
-    height: 286px;
-    min-height: 286px;
+    height: 258px;
+    min-height: 258px;
   }
 
   .donut-host {
-    height: 228px;
-    min-height: 228px;
+    height: 210px;
+    min-height: 210px;
   }
 
   .clock-stack span {
