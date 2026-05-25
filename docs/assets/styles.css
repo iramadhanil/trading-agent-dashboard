@@ -895,9 +895,88 @@ main {
   min-height: 268px;
 }
 
+.runway-terminal {
+  min-width: 0;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-self: stretch;
+}
+
+.runway-terminal-head,
+.runway-metric-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.runway-terminal-head div,
+.runway-metric-strip article {
+  min-width: 0;
+  border: 1px solid rgba(193, 206, 220, 0.62);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.82), rgba(239, 246, 250, 0.76)),
+    linear-gradient(90deg, rgba(11, 143, 105, 0.08), rgba(36, 95, 199, 0.08));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+}
+
+.runway-terminal-head div {
+  min-height: 58px;
+  display: grid;
+  gap: 3px;
+  align-content: center;
+  padding: 10px 12px;
+}
+
+.runway-terminal-head span,
+.runway-metric-strip span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 880;
+  text-transform: uppercase;
+}
+
+.runway-terminal-head strong,
+.runway-metric-strip strong {
+  color: #142238;
+  overflow-wrap: anywhere;
+}
+
+.runway-terminal-head strong {
+  font-size: 15px;
+  line-height: 1.15;
+}
+
+.runway-metric-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.runway-metric-strip article {
+  display: grid;
+  gap: 3px;
+  padding: 9px 10px;
+}
+
+.runway-metric-strip strong {
+  font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: clamp(12px, 0.95vw, 15px);
+  line-height: 1.1;
+}
+
+.equity-terminal-chart {
+  background:
+    radial-gradient(circle at 80% 18%, rgba(77, 240, 183, 0.13), transparent 30%),
+    linear-gradient(180deg, rgba(253, 254, 255, 0.96), rgba(239, 246, 250, 0.9)),
+    linear-gradient(rgba(36, 95, 199, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(36, 95, 199, 0.032) 1px, transparent 1px);
+  background-size: auto, auto, 48px 48px, 48px 48px;
+}
+
 .overview-runway-grid .hero-panel .chart {
   height: 100%;
-  min-height: clamp(300px, 25vw, 390px);
+  min-height: clamp(320px, 27vw, 430px);
   align-self: stretch;
 }
 
@@ -1653,9 +1732,13 @@ tbody tr:last-child td {
     height: auto;
   }
 
+  .runway-terminal {
+    height: auto;
+  }
+
   .overview-runway-grid .hero-panel .chart {
-    height: 286px;
-    min-height: 286px;
+    height: 340px;
+    min-height: 340px;
   }
 
   .overview-runway-grid .market-panel .chart.compact {
@@ -1749,6 +1832,11 @@ tbody tr:last-child td {
     grid-template-columns: 1fr;
   }
 
+  .runway-terminal-head,
+  .runway-metric-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .visual-card-dark .visual-stat-list {
     grid-template-columns: 1fr;
   }
@@ -1795,8 +1883,8 @@ tbody tr:last-child td {
   }
 
   .overview-runway-grid .hero-panel .chart {
-    height: 272px;
-    min-height: 272px;
+    height: 320px;
+    min-height: 320px;
   }
 
   .overview-runway-grid .market-panel .chart.compact {
@@ -1850,8 +1938,8 @@ tbody tr:last-child td {
   }
 
   .overview-runway-grid .hero-panel .chart {
-    height: 258px;
-    min-height: 258px;
+    height: 304px;
+    min-height: 304px;
   }
 
   .overview-runway-grid .market-panel .chart.compact {

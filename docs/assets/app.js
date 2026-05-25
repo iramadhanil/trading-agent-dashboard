@@ -1861,53 +1861,121 @@
         ])
       : [];
     const actualSeries = actualPoints.map((point) => point.value).concat(new Array(projectionPoints.length).fill(null));
+    const latestValue = actualPoints[actualPoints.length - 1].value;
+    const previewEndValue = projectionPoints.length ? projectionPoints[projectionPoints.length - 1].value : latestValue;
+    const requiredRate = projection.adjustment.requiredRate;
+    const planDrift = getPlanDrift(projection, projection.adjustment);
+    const nextMilestone = projection.nextMilestone;
+    const milestoneIndex = nextMilestone
+      ? projectionPoints.findIndex((point) => point.value >= nextMilestone.amount)
+      : -1;
+    const milestoneCategory = milestoneIndex >= 0 ? categories[actualPoints.length + milestoneIndex] : null;
+    const markLineData = [];
+    if (nextMilestone && milestoneCategory) {
+      markLineData.push({
+        yAxis: nextMilestone.amount,
+        name: "Next unlock",
+        label: { show: false }
+      });
+    }
+    setText("#runwayEngineState", entries.length ? `${entries.length} logs | ${projection.modeLabel} model` : `Preview | ${projection.modeLabel} model`);
+    setText(
+      "#runwayUnlockState",
+      nextMilestone
+        ? `${shortMoney(nextMilestone.amount)}${Number.isFinite(nextMilestone.days) ? ` in ${integerFormat.format(nextMilestone.days)} sessions` : ""}`
+        : "Goal reached"
+    );
+    setText("#runwayNowMetric", moneyFormat.format(latestValue));
+    setText("#runwayPreviewMetric", `${shortMoney(previewEndValue)} / +${previewLength}`);
+    setText("#runwayRequiredMetric", Number.isFinite(requiredRate) ? formatPercent(requiredRate * 100) : "Recovery");
+    setText("#runwayDriftMetric", formatPlanDrift(planDrift));
 
     renderEChart(element, {
       backgroundColor: "transparent",
       animationDuration: 850,
       animationEasing: "cubicOut",
-      title: entries.length
-        ? undefined
-        : {
-            text: "Projection preview",
-            subtext: "First log replaces preview with actual equity.",
-            left: "center",
-            top: 8,
-            textStyle: { color: "#25384f", fontFamily: "Manrope", fontSize: compact ? 10 : 12, fontWeight: 850 },
-            subtextStyle: { color: "#7a899d", fontFamily: "Manrope", fontSize: compact ? 9 : 11, fontWeight: 650 }
-          },
       tooltip: chartTooltip({
         trigger: "axis",
-        valueFormatter: (value) => (value == null ? "-" : moneyFormat.format(value))
+        formatter: (params) => {
+          const rows = params
+            .filter((item) => item.value != null)
+            .map((item) => {
+              const value = Array.isArray(item.value) ? item.value[1] : item.value;
+              const swatch = typeof item.color === "string"
+                ? item.color
+                : item.seriesName === "Adjusted target"
+                  ? (projection.adjustment.delta > 0 ? "#b56a00" : "#0b8f69")
+                  : item.seriesName === "Actual equity"
+                    ? "#0b8f69"
+                    : "#245fc7";
+              return `
+                <div style="display:flex;gap:18px;justify-content:space-between;align-items:center;margin-top:4px;">
+                  <span><span style="display:inline-block;width:8px;height:8px;border-radius:99px;background:${swatch};margin-right:6px;"></span>${escapeHtml(item.seriesName)}</span>
+                  <strong>${moneyFormat.format(value)}</strong>
+                </div>
+              `;
+            })
+            .join("");
+          const index = categories.indexOf(params[0]?.axisValue);
+          const phase = index < actualPoints.length ? "Logged equity" : `Forward session ${index - actualPoints.length + 1}`;
+          return `
+            <div style="min-width:190px;">
+              <div style="font-weight:850;color:#132033;">${escapeHtml(params[0]?.axisValue || "-")}</div>
+              <div style="color:#66758a;font-size:11px;margin-top:2px;">${escapeHtml(phase)}</div>
+              ${rows}
+            </div>
+          `;
+        }
       }, compact),
       legend: {
-        show: entries.length > 0 && !compact,
-        top: 8,
+        show: !compact,
+        top: 10,
         right: compact ? 8 : 14,
         itemWidth: 18,
         itemHeight: 8,
         textStyle: { color: "#66758a", fontFamily: "Manrope", fontSize: compact ? 10 : 12, fontWeight: 760 }
       },
       grid: {
-        left: compact ? 42 : 58,
-        right: compact ? 14 : 24,
-        top: entries.length ? (compact ? 18 : 38) : compact ? 48 : 52,
-        bottom: compact ? 30 : 36
+        left: compact ? 46 : 62,
+        right: compact ? 18 : 34,
+        top: compact ? 18 : 48,
+        bottom: compact ? 34 : 42
       },
+      dataZoom: [
+        {
+          type: "inside",
+          xAxisIndex: 0,
+          zoomOnMouseWheel: true,
+          moveOnMouseMove: true,
+          moveOnMouseWheel: true
+        }
+      ],
       xAxis: {
         type: "category",
         boundaryGap: false,
         data: categories,
         axisLine: { lineStyle: { color: "#c4d0dd" } },
         axisTick: { show: false },
-        axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: compact ? 10 : 11, interval: "auto" }
+        splitLine: { show: true, lineStyle: { color: "rgba(151, 167, 185, 0.12)" } },
+        axisLabel: {
+          color: "#66758a",
+          fontFamily: "IBM Plex Mono",
+          fontSize: compact ? 10 : 11,
+          interval: compact ? "auto" : 1
+        }
       },
       yAxis: {
         type: "value",
         scale: true,
         axisLine: { show: false },
         axisTick: { show: false },
-        splitLine: { lineStyle: { color: "rgba(151, 167, 185, 0.2)" } },
+        splitArea: {
+          show: true,
+          areaStyle: {
+            color: ["rgba(255,255,255,0.34)", "rgba(36,95,199,0.035)"]
+          }
+        },
+        splitLine: { lineStyle: { color: "rgba(151, 167, 185, 0.16)" } },
         axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: compact ? 10 : 11, formatter: shortMoney }
       },
       series: [
@@ -1919,8 +1987,14 @@
           symbolSize: 7,
           connectNulls: false,
           data: actualSeries,
-          lineStyle: { width: 3.4, color: "#0b8f69", shadowBlur: 10, shadowColor: "rgba(11, 143, 105, 0.24)" },
+          lineStyle: { width: 3.6, color: "#0b8f69", shadowBlur: 12, shadowColor: "rgba(11, 143, 105, 0.28)" },
           itemStyle: { color: "#0b8f69", borderColor: "#ffffff", borderWidth: 2 },
+          areaStyle: {
+            color: chartGradient(0, 0, 0, 1, [
+              { offset: 0, color: "rgba(11, 143, 105, 0.2)" },
+              { offset: 1, color: "rgba(11, 143, 105, 0.02)" }
+            ])
+          },
           emphasis: { focus: "series" }
         },
         {
@@ -1935,7 +2009,26 @@
             type: "dotted",
             color: projection.adjustment.delta > 0 ? "#b56a00" : "#0b8f69"
           },
-          emphasis: { focus: "series" }
+          emphasis: { focus: "series" },
+          markLine: markLineData.length
+            ? {
+                silent: true,
+                symbol: ["none", "none"],
+                lineStyle: { color: "rgba(181, 106, 0, 0.44)", width: 1.4, type: "dashed" },
+                label: {
+                  color: "#7a4600",
+                  fontFamily: "Manrope",
+                  fontWeight: 850,
+                  fontSize: compact ? 9 : 11,
+                  backgroundColor: "rgba(255, 241, 216, 0.88)",
+                  borderColor: "rgba(181, 106, 0, 0.22)",
+                  borderWidth: 1,
+                  borderRadius: 6,
+                  padding: [3, 6]
+                },
+                data: markLineData
+              }
+            : undefined
         },
         {
           name: "Projected path",
@@ -1944,12 +2037,48 @@
           symbol: "none",
           connectNulls: true,
           data: projectionSeries,
-          lineStyle: { width: 3, type: "dashed", color: "#245fc7", shadowBlur: 8, shadowColor: "rgba(36, 95, 199, 0.2)" },
+          lineStyle: {
+            width: 3.2,
+            type: entries.length ? "dashed" : "solid",
+            color: chartGradient(0, 0, 1, 0, [
+              { offset: 0, color: "#245fc7" },
+              { offset: 1, color: "#10a477" }
+            ]),
+            shadowBlur: 12,
+            shadowColor: "rgba(36, 95, 199, 0.2)"
+          },
           areaStyle: {
             color: chartGradient(0, 0, 0, 1, [
-              { offset: 0, color: "rgba(36, 95, 199, 0.22)" },
+              { offset: 0, color: "rgba(36, 95, 199, 0.2)" },
+              { offset: 0.48, color: "rgba(77, 240, 183, 0.1)" },
               { offset: 1, color: "rgba(11, 143, 105, 0.03)" }
             ])
+          },
+          markArea: {
+            silent: true,
+            itemStyle: { color: "rgba(36, 95, 199, 0.045)" },
+            label: { show: false },
+            data: [[
+              { xAxis: categories[Math.max(0, actualPoints.length - 1)] },
+              { xAxis: categories[categories.length - 1] }
+            ]]
+          },
+          markPoint: milestoneCategory
+            ? {
+                symbol: "pin",
+                symbolSize: compact ? 38 : 48,
+                itemStyle: { color: "#0b8f69" },
+                label: {
+                  color: "#ffffff",
+                  fontFamily: "IBM Plex Mono",
+                  fontWeight: 800,
+                  formatter: shortMoney(nextMilestone.amount)
+                },
+                data: [{ coord: [milestoneCategory, nextMilestone.amount], name: "Next unlock" }]
+              }
+            : undefined,
+          emphasis: {
+            focus: "series"
           }
         }
       ]

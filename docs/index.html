@@ -15,12 +15,12 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Inter:wght@500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="assets/styles.css?v=20260524-dense-flow" />
+    <link rel="stylesheet" href="assets/styles.css?v=20260526-runway-terminal" />
     <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script defer src="assets/echarts.min.js?v=20260524-dense-flow"></script>
-    <script defer src="assets/market-data.js?v=20260524-dense-flow"></script>
-    <script defer src="assets/app.js?v=20260524-dense-flow"></script>
+    <script defer src="assets/echarts.min.js?v=20260526-runway-terminal"></script>
+    <script defer src="assets/market-data.js?v=20260526-runway-terminal"></script>
+    <script defer src="assets/app.js?v=20260526-runway-terminal"></script>
   </head>
   <body>
     <div class="app-shell">
@@ -274,7 +274,37 @@
                 </div>
               </div>
 
-              <div id="equityChart" class="chart chart-host" role="img" aria-label="Equity curve"></div>
+              <div class="runway-terminal" aria-label="Runway projection terminal">
+                <div class="runway-terminal-head">
+                  <div>
+                    <span>Projection engine</span>
+                    <strong id="runwayEngineState">Baseline path</strong>
+                  </div>
+                  <div>
+                    <span>Next unlock</span>
+                    <strong id="runwayUnlockState">$1K</strong>
+                  </div>
+                </div>
+                <div id="equityChart" class="chart chart-host equity-terminal-chart" role="img" aria-label="Equity curve"></div>
+                <div class="runway-metric-strip">
+                  <article>
+                    <span>Now</span>
+                    <strong id="runwayNowMetric">$640</strong>
+                  </article>
+                  <article>
+                    <span>Preview end</span>
+                    <strong id="runwayPreviewMetric">$1.5K</strong>
+                  </article>
+                  <article>
+                    <span>Required</span>
+                    <strong id="runwayRequiredMetric">5.00%</strong>
+                  </article>
+                  <article>
+                    <span>Plan drift</span>
+                    <strong id="runwayDriftMetric">0 sessions</strong>
+                  </article>
+                </div>
+              </div>
             </section>
 
             <section class="tool-panel market-panel">
