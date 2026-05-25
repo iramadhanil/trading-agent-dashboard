@@ -39,5 +39,7 @@ create policy "Users can delete their own trading snapshot"
   to authenticated
   using (auth.uid() = user_id);
 
+revoke all on table public.trading_control_snapshots from anon;
+revoke all on table public.trading_control_snapshots from public;
 grant select, insert, update, delete on table public.trading_control_snapshots to authenticated;
 grant all on table public.trading_control_snapshots to service_role;
