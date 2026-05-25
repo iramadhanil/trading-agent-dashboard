@@ -23,6 +23,8 @@
   --shadow-soft: 0 10px 24px rgba(31, 49, 72, 0.07);
   --shadow-card: 0 18px 42px rgba(24, 42, 64, 0.1), 0 2px 0 rgba(255, 255, 255, 0.82) inset;
   --radius: 8px;
+  --font-ui: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-number: "Inter", "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 * {
@@ -45,10 +47,10 @@ body {
     linear-gradient(135deg, rgba(11, 143, 105, 0.08) 0%, rgba(255, 255, 255, 0) 30%),
     linear-gradient(225deg, rgba(36, 95, 199, 0.07) 0%, rgba(255, 255, 255, 0) 32%),
     linear-gradient(180deg, #f8fbfc 0%, #eef4f7 46%, #f7f9fb 100%);
-  font-family:
-    "Inter", "Manrope", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 15px;
+  font-family: var(--font-ui);
+  font-size: 14px;
   line-height: 1.5;
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   text-rendering: geometricPrecision;
 }
@@ -242,16 +244,16 @@ h1 {
   max-width: 900px;
   font-size: clamp(34px, 4.2vw, 54px);
   font-weight: 880;
-  line-height: 1.02;
+  line-height: 1.08;
   text-wrap: balance;
 }
 
 h2 {
   margin-bottom: 0;
   color: #162337;
-  font-size: 20px;
+  font-size: 19px;
   line-height: 1.18;
-  font-weight: 780;
+  font-weight: 800;
 }
 
 h3 {
@@ -464,8 +466,9 @@ main {
   z-index: 1;
   display: block;
   color: #101d2f;
-  font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 30px;
+  font-family: var(--font-number);
+  font-size: 28px;
+  font-weight: 800;
   line-height: 1.06;
   word-break: break-word;
 }
@@ -527,8 +530,9 @@ main {
 .adaptive-grid strong,
 .journal-feedback-grid strong {
   color: #101d2f;
-  font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 22px;
+  font-family: var(--font-number);
+  font-size: 20px;
+  font-weight: 800;
   line-height: 1.05;
   overflow-wrap: anywhere;
 }
@@ -735,8 +739,9 @@ main {
 
 .visual-stat-list strong {
   color: #132033;
-  font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--font-number);
   font-size: clamp(14px, 1.2vw, 17px);
+  font-weight: 800;
   line-height: 1.1;
   overflow-wrap: anywhere;
 }
@@ -960,8 +965,9 @@ main {
 }
 
 .runway-metric-strip strong {
-  font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: clamp(12px, 0.95vw, 15px);
+  font-family: var(--font-number);
+  font-size: clamp(12px, 0.95vw, 14px);
+  font-weight: 800;
   line-height: 1.1;
 }
 
@@ -1089,9 +1095,9 @@ main {
 
 .progress-ring strong {
   color: #101d2f;
-  font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 28px;
-  font-weight: 700;
+  font-family: var(--font-number);
+  font-size: 27px;
+  font-weight: 800;
   line-height: 1;
 }
 
@@ -1102,13 +1108,44 @@ main {
   text-transform: uppercase;
 }
 
-.projection-copy p {
-  max-width: 760px;
+.projection-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
   margin-bottom: 10px;
-  color: #526579;
+}
+
+.projection-summary-grid div {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid rgba(193, 206, 220, 0.7);
+  border-radius: var(--radius);
+  padding: 7px 10px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(241, 247, 250, 0.76)),
+    linear-gradient(90deg, rgba(11, 143, 105, 0.05), rgba(36, 95, 199, 0.045));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86);
+}
+
+.projection-summary-grid span {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.projection-summary-grid strong {
+  display: block;
+  color: #132033;
+  font-family: var(--font-number);
   font-size: 14px;
-  line-height: 1.35;
-  font-weight: 760;
+  font-weight: 820;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .detail-list {
@@ -1212,6 +1249,128 @@ main {
 
 .compact-form {
   gap: 10px;
+}
+
+.plan-panel {
+  gap: 16px;
+}
+
+.plan-diagnostics {
+  display: grid;
+  gap: 12px;
+  margin-top: 2px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(193, 206, 220, 0.74);
+}
+
+.diagnostic-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.diagnostic-head span,
+.plan-pressure-card span,
+.diagnostic-grid span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 880;
+  text-transform: uppercase;
+}
+
+.diagnostic-head strong {
+  display: block;
+  margin-top: 3px;
+  color: #142238;
+  font-size: 18px;
+  line-height: 1.12;
+  font-weight: 820;
+}
+
+.diagnostic-head svg {
+  width: 34px;
+  height: 34px;
+  padding: 8px;
+  border-radius: 999px;
+  color: #0b8f69;
+  background: rgba(224, 245, 236, 0.82);
+}
+
+.diagnostic-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.diagnostic-grid article,
+.plan-pressure-card {
+  min-width: 0;
+  border: 1px solid rgba(193, 206, 220, 0.72);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(241, 247, 250, 0.82));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.diagnostic-grid article {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+}
+
+.diagnostic-grid strong {
+  color: #122033;
+  font-family: var(--font-number);
+  font-size: 15px;
+  line-height: 1.1;
+  font-weight: 820;
+  overflow-wrap: anywhere;
+}
+
+.plan-pressure-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.plan-pressure-card > div:first-child {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.plan-pressure-card strong {
+  color: #132033;
+  font-weight: 820;
+}
+
+.plan-pressure-track {
+  position: relative;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, rgba(11, 143, 105, 0.2), rgba(181, 106, 0, 0.25), rgba(189, 57, 74, 0.22));
+}
+
+.plan-pressure-track i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 42%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #0b8f69, #245fc7);
+  box-shadow: 0 0 18px rgba(36, 95, 199, 0.22);
+  transition: width 0.24s ease;
+}
+
+.plan-pressure-card p {
+  margin: 0;
+  color: #526579;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 700;
 }
 
 label {
@@ -1494,8 +1653,9 @@ tbody tr:last-child td {
 
 .coach-metrics strong {
   color: #101d2f;
-  font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--font-number);
   font-size: 20px;
+  font-weight: 800;
   line-height: 1.1;
   text-transform: none;
 }
@@ -1834,6 +1994,10 @@ tbody tr:last-child td {
 
   .runway-terminal-head,
   .runway-metric-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .diagnostic-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

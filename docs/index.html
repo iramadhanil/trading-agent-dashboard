@@ -12,15 +12,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23132033'/%3E%3Cpath d='M14 42h8V28h8v14h8V20h8v22h4' stroke='%234df0b7' stroke-width='5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Inter:wght@500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="assets/styles.css?v=20260526-runway-terminal" />
+    <link rel="stylesheet" href="assets/styles.css?v=20260526-broker-polish" />
     <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script defer src="assets/echarts.min.js?v=20260526-runway-terminal"></script>
-    <script defer src="assets/market-data.js?v=20260526-runway-terminal"></script>
-    <script defer src="assets/app.js?v=20260526-runway-terminal"></script>
+    <script defer src="assets/echarts.min.js?v=20260526-broker-polish"></script>
+    <script defer src="assets/market-data.js?v=20260526-broker-polish"></script>
+    <script defer src="assets/app.js?v=20260526-broker-polish"></script>
   </head>
   <body>
     <div class="app-shell">
@@ -254,9 +254,20 @@
                   </div>
                 </div>
                 <div class="projection-copy">
-                  <p id="projectionSummary">
-                    Masukkan performa harian untuk membuat ETA menyesuaikan pace aktual.
-                  </p>
+                  <div class="projection-summary-grid" id="projectionSummary" aria-label="Plan summary">
+                    <div>
+                      <span>Pace</span>
+                      <strong id="projectionSummaryPace">5.00%</strong>
+                    </div>
+                    <div>
+                      <span>Sessions</span>
+                      <strong id="projectionSummarySessions">151</strong>
+                    </div>
+                    <div>
+                      <span>Required</span>
+                      <strong id="projectionSummaryRequired">4.99%</strong>
+                    </div>
+                  </div>
                   <dl class="detail-list">
                     <div>
                       <dt>ETA</dt>
@@ -455,7 +466,7 @@
               </form>
             </section>
 
-            <section class="tool-panel">
+            <section class="tool-panel plan-panel">
               <div class="panel-title">
                 <div>
                   <p class="eyebrow">Settings</p>
@@ -502,6 +513,51 @@
                   </button>
                 </div>
               </form>
+              <section class="plan-diagnostics" aria-label="Plan diagnostics">
+                <div class="diagnostic-head">
+                  <div>
+                    <span>Plan diagnostics</span>
+                    <strong id="planDiagnosticStatus">Baseline aligned</strong>
+                  </div>
+                  <i data-lucide="radar"></i>
+                </div>
+                <div class="diagnostic-grid">
+                  <article>
+                    <span>Current equity</span>
+                    <strong id="planDiagEquity">$640</strong>
+                  </article>
+                  <article>
+                    <span>Gap left</span>
+                    <strong id="planDiagGap">$999.4K</strong>
+                  </article>
+                  <article>
+                    <span>Sessions left</span>
+                    <strong id="planDiagSessions">151</strong>
+                  </article>
+                  <article>
+                    <span>Required/day</span>
+                    <strong id="planDiagRequired">4.99%</strong>
+                  </article>
+                  <article>
+                    <span>Daily loss cap</span>
+                    <strong id="planDiagLossCap">$19.20</strong>
+                  </article>
+                  <article>
+                    <span>Risk unit</span>
+                    <strong id="planDiagRiskUnit">$6.40</strong>
+                  </article>
+                </div>
+                <div class="plan-pressure-card">
+                  <div>
+                    <span>Target pressure</span>
+                    <strong id="planPressureLabel">Normal</strong>
+                  </div>
+                  <div class="plan-pressure-track" aria-label="Target pressure">
+                    <i id="planPressureFill"></i>
+                  </div>
+                  <p id="planDiagnosticNote">Plan pressure will update after each logged trading day.</p>
+                </div>
+              </section>
             </section>
           </div>
 

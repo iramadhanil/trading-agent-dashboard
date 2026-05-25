@@ -43,6 +43,8 @@
     currency: "USD",
     maximumFractionDigits: 2
   });
+  const CHART_FONT = "\"Plus Jakarta Sans\", Inter, system-ui, sans-serif";
+  const CHART_NUMBER_FONT = "Inter, \"Plus Jakarta Sans\", system-ui, sans-serif";
 
   const integerFormat = new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0
@@ -580,9 +582,15 @@
     $("#nextMilestone").textContent = projection.nextMilestone
       ? `${shortMoney(projection.nextMilestone.amount)} / ${integerFormat.format(projection.nextMilestone.days)} sessions`
       : "Goal reached";
-    $("#projectionSummary").textContent = projection.summary;
+    setText("#projectionSummaryPace", formatPercent(projection.rate * 100));
+    setText("#projectionSummarySessions", Number.isFinite(projection.days) ? integerFormat.format(projection.days) : "Recovery");
+    setText(
+      "#projectionSummaryRequired",
+      Number.isFinite(adjustment.requiredRate) ? formatPercent(adjustment.requiredRate * 100) : "Reset"
+    );
     renderCockpitStats(latestCapital, projection, progress, adjustment);
     renderAdaptivePlan(projection, adjustment);
+    renderPlanDiagnostics(latestCapital, projection, adjustment, drawdown);
 
     renderMilestones(projection.rate, projection.firstSession);
   }
@@ -606,6 +614,57 @@
       Number.isFinite(delta) ? `${formatSignedPercent(delta * 100)} needed` : "Recovery",
       delta > 0.005 ? "warning" : delta < -0.005 ? "positive" : "positive"
     );
+  }
+
+  function renderPlanDiagnostics(latestCapital, projection, adjustment, drawdown) {
+    const gap = Math.max(0, state.settings.goal - latestCapital);
+    const required = adjustment.requiredRate;
+    const baseline = adjustment.baselineRate;
+    const delta = adjustment.delta;
+    const lossCap = latestCapital * (state.settings.maxDailyLoss / 100);
+    const riskUnit = latestCapital * (state.settings.riskPerTrade / 100);
+    const drift = getPlanDrift(projection, adjustment);
+    const pressureRaw = Number.isFinite(delta) && baseline > 0
+      ? 42 + (delta / baseline) * 58
+      : 100;
+    const pressure = clamp(pressureRaw, 12, 100);
+    const pressureLabel = !Number.isFinite(required)
+      ? "Recovery mode"
+      : delta > baseline * 0.08
+        ? "High pressure"
+        : delta > baseline * 0.015
+          ? "Needs adjustment"
+          : delta < -baseline * 0.04
+            ? "Ahead of plan"
+            : "Normal";
+    const status = !Number.isFinite(required)
+      ? "Capital reset needed"
+      : drawdown.current < -0.03
+        ? "Drawdown control"
+        : delta > baseline * 0.08
+          ? "Target pressure rising"
+          : delta < -baseline * 0.04
+            ? "Ahead of baseline"
+            : "Baseline aligned";
+    const note = !state.entries.length
+      ? "Log the first session to turn this into an actual performance control panel."
+      : drawdown.current < -0.03
+        ? "Drawdown is active. Reduce size before raising target pace."
+        : delta > baseline * 0.015
+          ? `Required pace is ${formatSignedPercent(delta * 100)} above baseline; protect setup quality.`
+          : "Plan pressure is controlled. Keep execution inside the daily loss cap.";
+
+    setText("#planDiagnosticStatus", status);
+    setText("#planDiagEquity", moneyFormat.format(latestCapital));
+    setText("#planDiagGap", shortMoney(gap));
+    setText("#planDiagSessions", Number.isFinite(projection.days) ? integerFormat.format(projection.days) : "-");
+    setText("#planDiagRequired", Number.isFinite(required) ? formatPercent(required * 100) : "Reset");
+    setText("#planDiagLossCap", moneyFormat.format(lossCap));
+    setText("#planDiagRiskUnit", moneyFormat.format(riskUnit));
+    setText("#planPressureLabel", `${pressureLabel} | ${formatPlanDrift(drift)}`);
+    setText("#planDiagnosticNote", note);
+    const fill = $("#planPressureFill");
+    if (fill) fill.style.width = `${pressure}%`;
   }
 
   function renderMilestones(rate, firstSession) {
@@ -1507,7 +1566,7 @@
         "box-shadow:0 14px 34px rgba(24,42,64,.18);border-radius:8px;color:#122033;backdrop-filter:blur(10px);",
       textStyle: {
         color: "#122033",
-        fontFamily: "Inter, Manrope, system-ui, sans-serif",
+        fontFamily: CHART_FONT,
         fontSize: 12,
         fontWeight: 760
       },
@@ -1521,7 +1580,7 @@
           padding: [4, 6],
           backgroundColor: "rgba(18, 32, 51, 0.9)",
           color: "#ffffff",
-          fontFamily: "JetBrains Mono, IBM Plex Mono, monospace",
+          fontFamily: CHART_NUMBER_FONT,
           fontSize: 10
         }
       },
@@ -1551,7 +1610,7 @@
           style: {
             text: formatPercent(progress * 100),
             fill: "#ffffff",
-            fontFamily: "IBM Plex Mono",
+            fontFamily: CHART_NUMBER_FONT,
             fontSize: compact ? 23 : 26,
             fontWeight: 800,
             textAlign: "center"
@@ -1564,7 +1623,7 @@
           style: {
             text: "TARGET PROGRESS",
             fill: "#9fc6bf",
-            fontFamily: "Manrope",
+            fontFamily: CHART_FONT,
             fontSize: 11,
             fontWeight: 800,
             textAlign: "center"
@@ -1624,7 +1683,7 @@
         icon: "roundRect",
         itemWidth: 10,
         itemHeight: 10,
-        textStyle: { color: "#66758a", fontFamily: "Manrope", fontWeight: 700, fontSize: compact ? 10 : 11 }
+        textStyle: { color: "#66758a", fontFamily: CHART_FONT, fontWeight: 700, fontSize: compact ? 10 : 11 }
       },
       graphic: [
         {
@@ -1634,7 +1693,7 @@
           style: {
             text: Number.isFinite(adjustment.requiredRate) ? formatPercent(required) : "Reset",
             fill: centerColor,
-            fontFamily: "IBM Plex Mono",
+            fontFamily: CHART_NUMBER_FONT,
             fontSize: compact ? 19 : 22,
             fontWeight: 800,
             textAlign: "center"
@@ -1647,7 +1706,7 @@
           style: {
             text: "REQUIRED",
             fill: "#66758a",
-            fontFamily: "Manrope",
+            fontFamily: CHART_FONT,
             fontSize: 10,
             fontWeight: 800,
             textAlign: "center"
@@ -1712,7 +1771,7 @@
         trigger: "axis",
         valueFormatter: (value) => moneyFormat.format(value)
       }, compact),
-      grid: { left: compact ? 42 : 60, right: compact ? 22 : 48, top: compact ? 18 : 26, bottom: compact ? 30 : 38 },
+      grid: { left: compact ? 42 : 60, right: compact ? 22 : 48, top: compact ? 18 : 26, bottom: compact ? 30 : 38, containLabel: true },
       xAxis: {
         type: "value",
         name: "",
@@ -1722,7 +1781,7 @@
         axisLine: { lineStyle: { color: "#c4d0dd" } },
         axisTick: { show: false },
         splitLine: { lineStyle: { color: "rgba(151, 167, 185, 0.16)" } },
-        axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: compact ? 10 : 11 }
+        axisLabel: { color: "#66758a", fontFamily: CHART_NUMBER_FONT, fontSize: compact ? 10 : 11 }
       },
       yAxis: {
         type: "log",
@@ -1731,7 +1790,7 @@
         axisLine: { show: false },
         axisTick: { show: false },
         splitLine: { lineStyle: { color: "rgba(151, 167, 185, 0.18)" } },
-        axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: compact ? 10 : 11, formatter: shortMoney }
+        axisLabel: { color: "#66758a", fontFamily: CHART_NUMBER_FONT, fontSize: compact ? 10 : 11, formatter: shortMoney }
       },
       series: [
         {
@@ -1744,7 +1803,7 @@
             show: !compact,
             formatter: (params) => shortMoney(params.value[1]),
             color: "#0b6b55",
-            fontFamily: "JetBrains Mono",
+            fontFamily: CHART_NUMBER_FONT,
             fontSize: 12,
             fontWeight: 800
           },
@@ -1794,7 +1853,7 @@
             color: "#53657b",
             fontSize: compact ? 9 : 11,
             fontWeight: 800,
-            fontFamily: "Manrope",
+            fontFamily: CHART_FONT,
             hideOverlap: true
           }
         }
@@ -1933,13 +1992,14 @@
         right: compact ? 8 : 14,
         itemWidth: 18,
         itemHeight: 8,
-        textStyle: { color: "#66758a", fontFamily: "Manrope", fontSize: compact ? 10 : 12, fontWeight: 760 }
+        textStyle: { color: "#66758a", fontFamily: CHART_FONT, fontSize: compact ? 10 : 12, fontWeight: 760 }
       },
       grid: {
         left: compact ? 46 : 62,
         right: compact ? 18 : 34,
         top: compact ? 18 : 48,
-        bottom: compact ? 34 : 42
+        bottom: compact ? 34 : 42,
+        containLabel: true
       },
       dataZoom: [
         {
@@ -1959,7 +2019,7 @@
         splitLine: { show: true, lineStyle: { color: "rgba(151, 167, 185, 0.12)" } },
         axisLabel: {
           color: "#66758a",
-          fontFamily: "IBM Plex Mono",
+          fontFamily: CHART_NUMBER_FONT,
           fontSize: compact ? 10 : 11,
           interval: compact ? "auto" : 1
         }
@@ -1976,7 +2036,7 @@
           }
         },
         splitLine: { lineStyle: { color: "rgba(151, 167, 185, 0.16)" } },
-        axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: compact ? 10 : 11, formatter: shortMoney }
+        axisLabel: { color: "#66758a", fontFamily: CHART_NUMBER_FONT, fontSize: compact ? 10 : 11, formatter: shortMoney }
       },
       series: [
         {
@@ -2017,7 +2077,7 @@
                 lineStyle: { color: "rgba(181, 106, 0, 0.44)", width: 1.4, type: "dashed" },
                 label: {
                   color: "#7a4600",
-                  fontFamily: "Manrope",
+                  fontFamily: CHART_FONT,
                   fontWeight: 850,
                   fontSize: compact ? 9 : 11,
                   backgroundColor: "rgba(255, 241, 216, 0.88)",
@@ -2070,7 +2130,7 @@
                 itemStyle: { color: "#0b8f69" },
                 label: {
                   color: "#ffffff",
-                  fontFamily: "IBM Plex Mono",
+                  fontFamily: CHART_NUMBER_FONT,
                   fontWeight: 800,
                   formatter: shortMoney(nextMilestone.amount)
                 },
@@ -2106,21 +2166,21 @@
             subtext: "Daily bars switch to actual results after your first log.",
             left: "center",
             top: 10,
-            textStyle: { color: "#25384f", fontFamily: "Manrope", fontSize: compact ? 11 : 12, fontWeight: 850 },
-            subtextStyle: { color: "#7a899d", fontFamily: "Manrope", fontSize: compact ? 10 : 11, fontWeight: 650 }
+            textStyle: { color: "#25384f", fontFamily: CHART_FONT, fontSize: compact ? 11 : 12, fontWeight: 850 },
+            subtextStyle: { color: "#7a899d", fontFamily: CHART_FONT, fontSize: compact ? 10 : 11, fontWeight: 650 }
           }
         : undefined,
       tooltip: chartTooltip({
         trigger: "axis",
         valueFormatter: (value) => formatPercent(value)
       }, compact),
-      grid: { left: compact ? 36 : 42, right: compact ? 12 : 18, top: preview ? (compact ? 68 : 58) : 18, bottom: 32 },
+      grid: { left: compact ? 36 : 42, right: compact ? 12 : 18, top: preview ? (compact ? 68 : 58) : 18, bottom: 32, containLabel: true },
       xAxis: {
         type: "category",
         data: categories,
         axisLine: { lineStyle: { color: "#c4d0dd" } },
         axisTick: { show: false },
-        axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: compact ? 9 : 10, interval: compact ? "auto" : 0 }
+        axisLabel: { color: "#66758a", fontFamily: CHART_NUMBER_FONT, fontSize: compact ? 9 : 10, interval: compact ? "auto" : 0 }
       },
       yAxis: {
         type: "value",
@@ -2129,7 +2189,7 @@
         axisLine: { show: false },
         axisTick: { show: false },
         splitLine: { lineStyle: { color: "rgba(151, 167, 185, 0.18)" } },
-        axisLabel: { color: "#66758a", fontFamily: "IBM Plex Mono", fontSize: compact ? 9 : 10, formatter: (value) => `${value}%` }
+        axisLabel: { color: "#66758a", fontFamily: CHART_NUMBER_FONT, fontSize: compact ? 9 : 10, formatter: (value) => `${value}%` }
       },
       series: [
         {
@@ -2154,7 +2214,7 @@
             symbol: "none",
             label: {
               color: "#53657b",
-              fontFamily: "Inter",
+              fontFamily: CHART_FONT,
               fontSize: 10,
               fontWeight: 800,
               formatter: (params) => (params.data?.name ? params.data.name : "")
@@ -2162,7 +2222,7 @@
             lineStyle: { color: "rgba(102, 117, 138, 0.42)", width: 1 },
             data: [
               { yAxis: 0, name: "" },
-              { yAxis: state.settings.targetDailyReturn, name: compact ? "" : "target" }
+              { yAxis: state.settings.targetDailyReturn, name: "" }
             ]
           }
         }
@@ -2307,12 +2367,12 @@
     });
 
     ctx.fillStyle = options.textColor;
-    ctx.font = "700 24px 'IBM Plex Mono', ui-monospace, monospace";
+    ctx.font = `800 24px ${CHART_NUMBER_FONT}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(options.title, cx, cy - 7);
     ctx.fillStyle = options.subColor;
-    ctx.font = "700 12px 'Manrope', system-ui, sans-serif";
+    ctx.font = `800 12px ${CHART_FONT}`;
     ctx.fillText(options.subtitle, cx, cy + 18);
     ctx.textAlign = "left";
     ctx.textBaseline = "alphabetic";
